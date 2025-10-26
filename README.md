@@ -139,7 +139,7 @@ Some modern packages (libinput, wacom, xlibre-xserver) use Meson build system.
 
 ## License
 
-Individual packages maintain their original licenses (mostly MIT). See each APKBUILD for specific license information.
+Individual packages maintain their original licenses pulled from the original [Alpine Linux aports repository](https://gitlab.alpinelinux.org/alpine/aports) (mostly MIT). See each APKBUILD for specific license information.
 
 ## Contributing
 
