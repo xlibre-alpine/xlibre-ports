@@ -153,6 +153,7 @@ When adding new packages:
 ## TODO
 
 - [ ] Build and package Xlibre once a new version is released via GitHub Actions
+- [ ] Add support for Chimera Linux
 
 ## Related Links
 
