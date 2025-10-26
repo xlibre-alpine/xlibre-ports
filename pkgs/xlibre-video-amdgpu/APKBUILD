@@ -1,0 +1,53 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-amdgpu
+pkgver=23.0.0.5
+pkgrel=0
+pkgdesc="Xlibre AMD Rx/HDxxxx video driver"
+url="https://github.com/X11Libre/xf86-video-amdgpu"
+arch="all"
+license="MIT"
+depends="mesa-dri-gallium"
+makedepends="
+	eudev-dev
+	libdrm-dev
+	libpciaccess-dev
+	libxi-dev
+	mesa-dev
+	pixman-dev
+	util-macros
+	xlibre-xserver-dev
+	xorgproto
+	"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-amdgpu/archive/refs/tags/xlibre-xf86-video-amdgpu-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-amdgpu-xlibre-xf86-video-amdgpu-$pkgver"
+provides="xf86-video-amdgpu=$pkgver-r$pkgrel"
+replaces="xf86-video-amdgpu"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+c8364dc676fd008342cff72dace8a51bcf4253d7ae4238eeabe872db97a787ec89c76da64aa14b1d3d2dce9f9f3ebc20ceaf2f8c2f093cc73fccc6ba3e19f1a5  xlibre-xf86-video-amdgpu-23.0.0.5.tar.gz
+"

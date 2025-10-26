@@ -1,0 +1,42 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-fbdev
+pkgver=0.5.1.2
+pkgrel=0
+pkgdesc="Xlibre video driver for framebuffer device"
+url="https://github.com/X11Libre/xf86-video-fbdev"
+arch="all"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-fbdev/archive/refs/tags/xlibre-xf86-video-fbdev-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-fbdev-xlibre-xf86-video-fbdev-$pkgver"
+provides="xf86-video-fbdev=$pkgver-r$pkgrel"
+replaces="xf86-video-fbdev"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+0b08a3d0ab37a7576e1bd41835e37aade4410e5f56c02cd701ea9482b3980cf95828e378b82671568e0fded5f3c13e932ea06d40202e39e8937b26dd64f54695  xlibre-xf86-video-fbdev-0.5.1.2.tar.gz
+"

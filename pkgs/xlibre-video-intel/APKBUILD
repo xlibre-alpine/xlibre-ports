@@ -1,0 +1,76 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-intel
+pkgver=3.0.0.4
+pkgrel=0
+pkgdesc="Xlibre driver for Intel video cards"
+url="https://github.com/X11Libre/xf86-video-intel"
+arch="all"
+license="MIT"
+depends="mesa-dri-gallium"
+makedepends="
+	autoconf
+	automake
+	eudev-dev
+	libdrm-dev
+	libtool
+	libxi-dev
+	libxcursor-dev
+	libxrandr-dev
+	libxrender-dev
+	libxscrnsaver-dev
+	libxinerama-dev
+	libxtst-dev
+	libxv-dev
+	libxvmc-dev
+	mesa-dev
+	meson
+	util-macros
+	xcb-util-dev
+	xlibre-xserver-dev
+	xorgproto
+	"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-intel/archive/refs/tags/xlibre-xf86-video-intel-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-intel-xlibre-xf86-video-intel-$pkgver"
+provides="xf86-video-intel=$pkgver-r$pkgrel"
+replaces="xf86-video-intel"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--enable-tools \
+		--enable-xvmc \
+		--disable-selective-werror \
+		--with-default-dri=3
+	make
+}
+
+
+check() {
+	meson test --no-rebuild --print-errorlogs -C output || true
+}
+
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+
+	# http://bugs.alpinelinux.org/issues/3312
+	chmod o-x "$pkgdir"/usr/libexec/xf86-video-intel-backlight-helper
+}
+
+
+
+sha512sums="
+75f94dba9979edbabcae22d987a9a39e6f596dc68a006678336d2329afaba8b8c1d6fc2ad6dad711fa6f558f3a8be0485cef02c6c808016d7b511b7193fc2c5d  xlibre-xf86-video-intel-3.0.0.4.tar.gz
+"

@@ -1,0 +1,45 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-input-synaptics
+pkgver=1.10.0.2
+pkgrel=0
+pkgdesc="Xlibre Synaptics touchpad input driver"
+url="https://github.com/X11Libre/xf86-input-synaptics"
+arch="all"
+license="MIT"
+makedepends="libxkbfile-dev xlibre-xserver-dev libxi-dev libxrandr-dev mtdev-dev libxtst-dev libevdev-dev"
+subpackages="$pkgname-dev $pkgname-doc"
+source="https://github.com/X11Libre/xf86-input-synaptics/archive/refs/tags/xlibre-xf86-input-synaptics-$pkgver.tar.gz"
+builddir="$srcdir/xf86-input-synaptics-xlibre-xf86-input-synaptics-$pkgver"
+provides="xf86-input-synaptics=$pkgver-r$pkgrel"
+replaces="xf86-input-synaptics"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+adf85174b1debb4e360499510c7b6ba939fd0522050409362d31504c8a7247dac1b994e431259540bbb77e168b7f1308ea112d5b3f60c29252ba0488967f7735  xlibre-xf86-input-synaptics-1.10.0.2.tar.gz
+"

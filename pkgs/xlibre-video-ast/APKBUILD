@@ -1,0 +1,45 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-ast
+pkgver=1.2.0.1
+pkgrel=0
+pkgdesc="Xlibre driver for ASpeedTech cards"
+url="https://github.com/X11Libre/xf86-video-ast"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto autoconf automake libtool"
+source="https://github.com/X11Libre/xf86-video-ast/archive/refs/tags/xlibre-xf86-video-ast-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-ast-xlibre-xf86-video-ast-$pkgver"
+provides="xf86-video-ast=$pkgver-r$pkgrel"
+replaces="xf86-video-ast"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+ae21a86c87a9bd25d5cf4ca57db259932598848deb409660d12b1e6c5f5784cd4d100b08b6f8a6bf8ac87e199a63c4a92c6d2abd256bad4b43dc4d63dc2d8ca8  xlibre-xf86-video-ast-1.2.0.1.tar.gz
+"

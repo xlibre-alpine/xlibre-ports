@@ -1,0 +1,44 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-s3virge
+pkgver=1.11.1.1
+pkgrel=0
+pkgdesc="Xlibre S3 ViRGE video driver"
+url="https://github.com/X11Libre/xf86-video-s3virge"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-s3virge/archive/refs/tags/xlibre-xf86-video-s3virge-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-s3virge-xlibre-xf86-video-s3virge-$pkgver"
+provides="xf86-video-s3virge=$pkgver-r$pkgrel"
+replaces="xf86-video-s3virge"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+
+sha512sums="
+92b26039eb4fb7fd0e8486be238431eeb97f8165384c34297fbd21d356e2570928f70a859615cccfb6730f3b6f96148de64cbcb9a51f705f0ca0cb18ac7c55ab  xlibre-xf86-video-s3virge-1.11.1.1.tar.gz
+"

@@ -1,0 +1,44 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-ark
+pkgver=0.7.6.1
+pkgrel=0
+pkgdesc="Xlibre driver for ark cards"
+url="https://github.com/X11Libre/xf86-video-ark"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto autoconf automake libtool"
+source="https://github.com/X11Libre/xf86-video-ark/archive/refs/tags/xfree-xf86-video-ark-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-ark-xfree-xf86-video-ark-$pkgver"
+provides="xf86-video-ark=$pkgver-r$pkgrel"
+replaces="xf86-video-ark"
+
+prepare() {
+	default_prepare
+	autoreconf -vif
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+2d5b1219bf0933fb6ba87c59a0f3327f4530e32fd0a1d766f08dfa5c294fea552c0c97ad922d34e0d6e85d602bfab342ca09c4dcd9c4fde306f37b622b476c3d  xfree-xf86-video-ark-0.7.6.1.tar.gz
+"

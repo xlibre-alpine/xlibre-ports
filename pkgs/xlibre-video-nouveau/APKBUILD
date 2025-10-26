@@ -1,0 +1,46 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-nouveau
+pkgver=1.0.18.3
+pkgrel=0
+pkgdesc="Open-source Xlibre drivers for nVidia video cards"
+url="https://github.com/X11Libre/xf86-video-nouveau"
+arch="all"
+license="MIT"
+depends="mesa-dri-gallium"
+makedepends="libdrm-dev xlibre-xserver-dev util-macros eudev-dev xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-nouveau/archive/refs/tags/xlibre-xf86-video-nouveau-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-nouveau-xlibre-xf86-video-nouveau-$pkgver"
+provides="xf86-video-nouveau=$pkgver-r$pkgrel"
+replaces="xf86-video-nouveau"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+252c2ce0b086e5f11737455aebbb4c6ddb278c272f9bdc048d27c49726ba7a7b30af42aba9453cf41c0dddc7c833b3f72eb5390a668c75568d0b064811ec0aac  xlibre-xf86-video-nouveau-1.0.18.3.tar.gz
+"

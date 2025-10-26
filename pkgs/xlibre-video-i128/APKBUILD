@@ -1,0 +1,43 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-i128
+pkgver=1.4.1.1
+pkgrel=3
+pkgdesc="Xlibre driver for I128 video cards"
+url="https://xorg.freedesktop.org"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-i128/archive/refs/tags/xlibre-xf86-video-i128-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-i128-xlibre-xf86-video-i128-$pkgver"
+provides="xf86-video-i128=$pkgver-r$pkgrel"
+replaces="xf86-video-i128"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+4e75e60a5ff0d2b0ab9c8671b00e65e376e4e7c0e0c63f90b35b833e803d7487af6ea1dd6e5a863e4b8e040e8a4fa5930cb0e805d0f224619c0d8ce882833773  xlibre-xf86-video-i128-1.4.1.1.tar.gz
+"

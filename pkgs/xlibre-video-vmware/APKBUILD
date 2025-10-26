@@ -1,0 +1,50 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-vmware
+pkgver="13.4.0.3"
+pkgrel=0
+pkgdesc="Xlibre VMWare video driver"
+url="https://github.com/X11Libre/xf86-video-vmware"
+arch="x86 x86_64 arm64"
+license="MIT"
+subpackages="$pkgname-doc"
+makedepends="
+	eudev-dev
+	libdrm-dev
+	libxi-dev
+	util-macros
+	xlibre-xserver-dev
+	xorgproto
+	"
+source="https://github.com/X11Libre/xf86-video-vmware/archive/refs/tags/xlibre-xf86-video-vmware-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-vmware-xlibre-xf86-video-vmware-$pkgver"
+provides="xf86-video-vmware=$pkgver-r$pkgrel"
+replaces="xf86-video-vmware"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+6f0426fea9077f20c1e0c58a8cbb93a6ecb5964fc6c4f689b1702dfe307143b55cce780b10396ed2370442684d8c7845f41eed4f9978f3f520b4c4c5a74d07a9  xlibre-xf86-video-vmware-13.4.0.3.tar.gz
+"

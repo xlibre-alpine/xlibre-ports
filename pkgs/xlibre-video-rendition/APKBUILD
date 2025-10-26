@@ -1,0 +1,44 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-rendition
+pkgver=4.2.7.1
+pkgrel=0
+pkgdesc="Xlibre Rendition video driver"
+url="https://github.com/X11Libre/xf86-video-rendition"
+arch="x86 x86_64"
+license="MIT"
+options="!strip"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-rendition/archive/refs/tags/xlibre-xf86-video-rendition-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-rendition-xlibre-xf86-video-rendition-$pkgver"
+provides="xf86-video-rendition=$pkgver-r$pkgrel"
+replaces="xf86-video-rendition"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+
+	# Stripping manually
+	strip $pkgdir/usr/lib/xorg/modules/drivers/rendition_drv.so
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+c91cbd92f3dc26772593d71d7c3149464fce09eeb1092860d8d2afc85006ffa7c6b132d5ddfe87e68f4486acc2124547723d0508571ab0dec9deaefd7600d876  xlibre-xf86-video-rendition-4.2.7.1.tar.gz
+"

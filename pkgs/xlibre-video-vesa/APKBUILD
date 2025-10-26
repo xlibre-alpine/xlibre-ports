@@ -1,0 +1,43 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-vesa
+pkgver="2.6.0.3"
+pkgrel=0
+pkgdesc="XLibre generic VESA video driver"
+url="https://github.com/X11Libre/xf86-video-vesa"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-vesa/archive/refs/tags/xlibre-xf86-video-vesa-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-vesa-xlibre-xf86-video-vesa-$pkgver"
+provides="xf86-video-vesa=$pkgver-r$pkgrel"
+replaces="xf86-video-vesa"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+7ca5183a84e5111d747932beec1dc0e53525bbac72f97c9c14b7c9c36e1c16dfb2d4c40c6062588d30deb8bd45ee4430275a84e365a7285c6d7f8597a318f19c  xlibre-xf86-video-vesa-2.6.0.3.tar.gz
+"

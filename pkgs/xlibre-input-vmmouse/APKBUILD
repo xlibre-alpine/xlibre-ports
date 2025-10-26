@@ -1,0 +1,39 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-input-vmmouse
+pkgver=13.2.0.2
+pkgrel=0
+pkgdesc="Xlibre VMware mouse input driver"
+url="https://github.com/X11Libre/xf86-input-vmmouse"
+arch="x86 x86_64 arm64"
+license="MIT"
+subpackages="$pkgname-doc"
+makedepends="libxkbfile-dev xlibre-xserver-dev libxi-dev libxrandr-dev eudev-dev"
+source="https://github.com/X11Libre/xf86-input-vmmouse/archive/refs/tags/xlibre-xf86-input-vmmouse-$pkgver.tar.gz"
+builddir="$srcdir/xf86-input-vmmouse-xlibre-xf86-input-vmmouse-$pkgver"
+provides="xf86-input-vmmouse=$pkgver-r$pkgrel"
+replaces="xf86-input-vmmouse"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+124ef32a46340ab82444adec22e4a0c2d1bd9dd78603b465e4bd5b3dd24d2112c4df56112d179802f828872abec4d05b3f44e202dc58f84410e8ebe4d639e89d  xlibre-xf86-input-vmmouse-13.2.0.2.tar.gz
+"

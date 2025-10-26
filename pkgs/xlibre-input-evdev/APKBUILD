@@ -1,0 +1,43 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-input-evdev
+pkgver=2.11.0.2
+pkgrel=0
+pkgdesc="Xlibre evdev input driver"
+url="https://github.com/X11Libre/xf86-input-evdev"
+arch="all"
+license="MIT"
+subpackages="$pkgname-doc $pkgname-dev"
+makedepends="libxkbfile-dev xlibre-xserver-dev libxi-dev libxrandr-dev
+	eudev-dev mtdev-dev libevdev-dev autoconf automake libtool"
+source="https://github.com/X11Libre/xf86-input-evdev/archive/refs/tags/xlibre-xf86-input-evdev-$pkgver.tar.gz"
+builddir="$srcdir/xf86-input-evdev-xlibre-xf86-input-evdev-$pkgver"
+provides="xf86-input-evdev=$pkgver-r$pkgrel"
+replaces="xf86-input-evdev"
+
+prepare() {
+	default_prepare
+	autoreconf -vif
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+e0a42b5ef56054f57515ecbe1919accf88c3e04a0c7a22a07a635e96ae89aa13eae8f6a9cb8301fd5f6761466c931cca7c10ed2c25030e25b4528edaeae05af7  xlibre-xf86-input-evdev-2.11.0.2.tar.gz
+"

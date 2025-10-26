@@ -1,0 +1,43 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-siliconmotion
+pkgver="1.7.10.2"
+pkgrel=0
+pkgdesc="Xlibre Silicon Motion video driver"
+url="https://github.com/X11Libre/xf86-video-siliconmotion"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-siliconmotion/archive/refs/tags/xlibre-xf86-video-siliconmotion-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-siliconmotion-xlibre-xf86-video-siliconmotion-$pkgver"
+provides="xf86-video-siliconmotion=$pkgver-r$pkgrel"
+replaces="xf86-video-siliconmotion"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {	
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+f4cd254a79ac059d205f265c9871aa437a5ce028a27d8b9b5385a4d11040d4ec339a3b265c6eb389f2e487742f6af3478f841d87b5705ba653c48d0efe56f5b7  xlibre-xf86-video-siliconmotion-1.7.10.2.tar.gz
+"

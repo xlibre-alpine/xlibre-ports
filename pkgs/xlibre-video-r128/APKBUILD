@@ -1,0 +1,57 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-r128
+pkgver=6.13.0.2
+pkgrel=0
+pkgdesc="Xlibre ATI Rage128 video driver"
+url="https://github.com/X11Libre/xf86-video-r128"
+arch="all !loongarch64"
+license="MIT"
+depends="mesa-dri-gallium"
+makedepends="
+	autoconf
+	automake
+	libtool
+	util-macros
+	expat-dev
+	libdrm-dev
+	libxi-dev
+	mesa-dev
+	util-macros
+	xlibre-xserver-dev
+	xorgproto
+	"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-r128/archive/refs/tags/xlibre-xf86-video-r128-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-r128-xlibre-xf86-video-r128-$pkgver"
+provides="xf86-video-r128=$pkgver-r$pkgrel"
+replaces="xf86-video-r128"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--disable-dri
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+15cc368a4276b0551f3c6845ad340ec78cd9d96a8d0a460d63a0205e4d3f364bc655ffdf9f5fd1ec21f84b5b138b1c9e0cdddaa58c62178992ee5365c85e4c5f  xlibre-xf86-video-r128-6.13.0.2.tar.gz
+"

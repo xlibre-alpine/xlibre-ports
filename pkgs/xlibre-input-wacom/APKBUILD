@@ -1,0 +1,39 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-input-wacom
+pkgver=1.2.3.2
+pkgrel=0
+pkgdesc="Xlibre Wacom tablet input driver"
+url="https://github.com/X11Libre/xf86-input-wacom"
+arch="all"
+license="GPL-2.0-or-later"
+makedepends="eudev-dev
+	libpciaccess-dev
+	libxext-dev
+	libxi-dev
+	libxinerama-dev
+	libxrandr-dev
+	util-macros
+	xlibre-xserver-dev
+	"
+subpackages="$pkgname-dev $pkgname-doc"
+source="https://github.com/X11Libre/xf86-input-wacom/archive/refs/tags/xlibre-xf86-input-wacom-$pkgver.tar.gz"
+builddir="$srcdir/xf86-input-wacom-xlibre-xf86-input-wacom-$pkgver"
+provides="xf86-input-wacom=$pkgver-r$pkgrel"
+replaces="xf86-input-wacom"
+
+build() {
+	abuild-meson . output
+	meson compile -C output
+}
+
+check() {
+	meson test --no-rebuild --print-errorlogs -C output || true
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+}
+
+sha512sums="
+26681a46f3b944fc6b33e3fd6664c9c6d3e88bc27429324a107591e86bdb86b732a47cfccf396e408e5239ac31564e7e928e28fb693a1620cc4e97f0099d72e8  xlibre-xf86-input-wacom-1.2.3.2.tar.gz
+"

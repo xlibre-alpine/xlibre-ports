@@ -1,0 +1,44 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-omap
+pkgver=0.4.5.2
+pkgrel=0
+pkgdesc="OMAP3+ framebuffer driver for Xlibre"
+url="https://github.com/X11Libre/xf86-video-omap"
+arch="armv7"
+license="GPL-2.0-only"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto libdrm-dev m4
+	autoconf automake libtool libc-dev eudev-dev" #libudev-zero-dev additionally workssubpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-omap/archive/refs/tags/xlibre-xf86-video-omap-$pkgver.tar.gz"
+options="!check" #no check
+subpackages="$pkgname-doc"
+builddir="$srcdir/xf86-video-omap-xlibre-xf86-video-omap-$pkgver"
+provides="xf86-video-omap=$pkgver-r$pkgrel"
+replaces="xf86-video-omap"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+5deb4555134f33fb21966fb69b599143216299d002d491d09aad4a9fdd443d1f2c399c170d2905b4915b880c5cac681a5647419a396b00adfee3335ae59b3de6  xlibre-xf86-video-omap-0.4.5.2.tar.gz
+"

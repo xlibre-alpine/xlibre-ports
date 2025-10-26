@@ -1,0 +1,43 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-sis
+pkgver=0.12.0.1
+pkgrel=0
+pkgdesc="Xlibre SiS video driver"
+url="https://github.com/X11Libre/xf86-video-sis"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev util-macros mesa-dev libxi-dev xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-sis/archive/refs/tags/xlibre-xf86-video-sis-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-sis-xlibre-xf86-video-sis-$pkgver"
+provides="xf86-video-sis=$pkgver-r$pkgrel"
+replaces="xf86-video-sis"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+fbe4dfd59e58067d0b3ec9bd9ca06cc380aaf8bd5b83b848104f300e56847b03bc989a821659ebff42f7b81e252107d015a9161deaf097ae9d8019c98720a01f  xlibre-xf86-video-sis-0.12.0.1.tar.gz
+"

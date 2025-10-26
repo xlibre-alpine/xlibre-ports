@@ -1,0 +1,46 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-chips
+pkgver=1.5.0.1
+pkgrel=0
+pkgdesc="Xlibre Chips and Technologies video driver"
+url="https://github.com/X11Libre/xf86-video-chips"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-chips/archive/refs/tags/xlibre-xf86-video-chips-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-chips-xlibre-xf86-video-chips-$pkgver"
+provides="xf86-video-chips=$pkgver-r$pkgrel"
+replaces="xf86-video-chips"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="
+7db10884d1044346b705e9a6870189dac3360fed6c57c30e974b8cd7c1e5d59ad88a13e1970886991e37ebd9af3fa37a6a937ad0177b83fefcd965db1a801389  xlibre-xf86-video-chips-1.5.0.1.tar.gz
+"

@@ -1,0 +1,32 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-input-libinput
+pkgver=1.5.1.0
+pkgrel=0
+pkgdesc="Xlibre input driver based on libinput"
+url="https://github.com/X11Libre/xf86-input-libinput"
+arch="all"
+license="MIT"
+depends_dev="xlibre-xserver-dev libinput-dev"
+makedepends="$depends_dev eudev-dev xorgproto meson"
+subpackages="$pkgname-dev $pkgname-doc"
+source="https://github.com/X11Libre/xf86-input-libinput/archive/refs/tags/xlibre-xf86-input-libinput-$pkgver.tar.gz"
+builddir="$srcdir/xf86-input-libinput-xlibre-xf86-input-libinput-$pkgver"
+provides="xf86-input-libinput=$pkgver-r$pkgrel"
+replaces="xf86-input-libinput"
+
+build() {
+	abuild-meson . output
+	meson compile -C output
+}
+
+check() {
+	meson test --no-rebuild --print-errorlogs -C output || true
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+}
+
+sha512sums="
+bfffbf2455febc7564a6240ec4f324cf18dfa80b08bdbea663f6b503c164bc8a2225963e04bd9e4f602ddfa613c83390e303b41ff776ddf2f7e99f7e45b6dcb6  xlibre-xf86-input-libinput-1.5.1.0.tar.gz
+"

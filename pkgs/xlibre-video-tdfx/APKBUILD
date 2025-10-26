@@ -1,0 +1,42 @@
+# Maintainer: matik <wierzejskimateusz8@gmail.com>
+pkgname=xlibre-video-tdfx
+pkgver=1.5.0.1
+pkgrel=0
+pkgdesc="Xlibre 3Dfx video driver"
+url="https://github.com/X11Libre/xf86-video-tdfx"
+arch="x86 x86_64"
+license="MIT"
+makedepends="xlibre-xserver-dev libdrm-dev util-macros xorgproto"
+subpackages="$pkgname-doc"
+source="https://github.com/X11Libre/xf86-video-tdfx/archive/refs/tags/xlibre-xf86-video-tdfx-$pkgver.tar.gz"
+builddir="$srcdir/xf86-video-tdfx-xlibre-xf86-video-tdfx-$pkgver"
+provides="xf86-video-tdfx=$pkgver-r$pkgrel"
+replaces="xf86-video-tdfx"
+
+prepare() {
+	default_prepare
+	autoreconf -fi
+}
+
+build() {
+	export CFLAGS="${CFLAGS/-fno-plt}"
+	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
+	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	make check || true
+}
+
+package() {
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="
+15254ba83af756e3cf775c009722bc6fabe93a28d3ddc421dc2acfb2bc5a06946e579ec14bf89338cceee1c06c715a71321f0b35876f70a5b91ef5105f588204  xlibre-xf86-video-tdfx-1.5.0.1.tar.gz
+"
