@@ -18,7 +18,12 @@ makedepends = [
     "udev-devel",
     "xserver-xlibre-devel",
 ]
-depends = ["virtual:xserver-abi-input~24!xserver-xlibre-core"]
+depends = [
+    "virtual:xserver-abi-input~24!xserver-xlibre-core",
+    "xserver-xlibre-core",
+]
+provides = [self.with_pkgver("xserver-xlibre-input-driver")]
+replaces = ["xserver-xorg-input-wacom"]
 pkgdesc = "XLibre Wacom tablet input driver"
 license = "GPL-2.0-or-later"
 url = "https://github.com/X11Libre/xf86-input-wacom"

@@ -176,10 +176,11 @@ def _(self):
         "xserver-abi-extension=10.0",
         "xserver-abi-input=24.4",
         "xserver-abi-video=25.2",
+        "xserver-xorg-core",
     ]
-    self.file_modes = {"usr/lib/Xorg.wrap": ("root", "root", 0o4755)}
-    self.provides = ["xserver-xorg-core"]
     self.replaces = ["xserver-xorg-core"]
+    self.replaces_priority = 100
+    self.file_modes = {"usr/lib/Xorg.wrap": ("root", "root", 0o4755)}
     return [
         "usr/bin/X",
         "usr/bin/Xorg",
@@ -209,7 +210,7 @@ def _(self):
 @subpackage("xserver-xlibre-input-none")
 def _(self):
     self.subdesc = "no input driver"
-    self.provides = ["xserver-xorg-input-driver=0"]
+    self.provides = ["xserver-xlibre-input-driver=0"]
     self.options = ["empty"]
     self.provides = ["xserver-xorg-input-none"]
     self.replaces = ["xserver-xorg-input-none"]

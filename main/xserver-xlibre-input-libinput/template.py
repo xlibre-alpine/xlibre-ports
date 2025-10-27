@@ -9,8 +9,12 @@ hostmakedepends = [
     "xorg-util-macros",
 ]
 makedepends = ["xserver-xlibre-devel", "libinput-devel"]
-depends = ["virtual:xserver-abi-input~24!xserver-xlibre-core"]
-provides = [self.with_pkgver("xserver-xorg-input-driver")]
+depends = [
+    "virtual:xserver-abi-input~24!xserver-xlibre-core",
+    "xserver-xlibre-core",
+]
+provides = [self.with_pkgver("xserver-xlibre-input-driver")]
+replaces = ["xserver-xorg-input-libinput"]
 pkgdesc = "Generic input driver for XLibre server based on libinput"
 license = "MIT"
 url = "https://github.com/X11Libre/xf86-input-libinput"

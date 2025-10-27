@@ -16,7 +16,10 @@ makedepends = [
 ]
 depends = [
     "virtual:xserver-abi-input~24!xserver-xlibre-core",
+    "xserver-xlibre-core",
 ]
+provides = [self.with_pkgver("xserver-xlibre-input-driver")]
+replaces = ["xserver-xorg-input-evdev"]
 pkgdesc = "Generic input driver for XLibre server based on evdev"
 license = "MIT"
 url = "https://github.com/X11Libre/xf86-input-evdev"
