@@ -1,0 +1,45 @@
+From: matik <wierzejskimateusz8@gmail.com>
+Date: Mon, Oct 27 13:20:00 2025 +0100
+Subject: [PATCH xserver] xfree86: use modesetting driver by default on GeForce
+ 8 and newer (note: credits to original author: Ben Skeggs <bskeggs@redhat.com>)
+
+diff --git a/hw/xfree86/common/xf86pciBus.c b/hw/xfree86/common/xf86pciBus.c
+index 07b6d50eb..14b07431a 100644
+--- a/hw/xfree86/common/xf86pciBus.c
++++ b/hw/xfree86/common/xf86pciBus.c
+@@ -37,6 +37,9 @@
+ #include <unistd.h>
+ #include <pciaccess.h>
+ #include <X11/X.h>
++#if defined(__linux__) || defined(__NetBSD__)
++#include <xf86drm.h>
++#endif
+ 
+ #include "os/log_priv.h"
+ 
+@@ -1191,6 +1194,25 @@ xf86VideoPtrToDriverList(struct pci_device *dev, XF86MatchedDrivers *md)
+         int idx = 0;
+ 
+ #if defined(__linux__) || defined(__NetBSD__)
++        char busid[32];
++        int fd;
++
++        snprintf(busid, sizeof(busid), "pci:%04x:%02x:%02x.%d",
++                 dev->domain, dev->bus, dev->dev, dev->func);
++
++        /* 'modesetting' is preferred for GeForce 8 and newer GPUs */
++        fd = drmOpenWithType("nouveau", busid, DRM_NODE_RENDER);
++        if (fd >= 0) {
++            uint64_t args[] = { 11 /* NOUVEAU_GETPARAM_CHIPSET_ID */, 0 };
++            int ret = drmCommandWriteRead(fd, 0 /* DRM_NOUVEAU_GETPARAM */,
++                                          &args, sizeof(args));
++            drmClose(fd);
++            if (ret == 0) {
++                if (args[1] == 0x050 || args[1] >= 0x80)
++                    break;
++            }
++        }
++
+         driverList[idx++] = "nouveau";
+ #endif
+         driverList[idx++] = "nv";

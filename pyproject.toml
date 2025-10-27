@@ -1,0 +1,37 @@
+[tool.black]
+line-length = 80
+target-version = ['py312']
+
+[tool.ruff]
+line-length = 80
+target-version = 'py312'
+builtins = ['custom_target', 'self', 'subpackage']
+
+[tool.ruff.lint]
+extend-select = [
+    'C4',
+    'E',
+    'RUF',
+    'UP',
+    'W',
+    'ISC001',
+    'ISC002',
+]
+ignore = [
+    # no
+    'C417',
+    # black compat
+    'E203',
+    # long source lines
+    'E501',
+    # unused unpack sequences
+    'F841',
+    # allow redundant open(, 'r')
+    'UP015',
+    # we check this intentionally
+    'UP036',
+    # edontcare
+    'RUF012',
+    'RUF015',
+    'RUF059',
+]

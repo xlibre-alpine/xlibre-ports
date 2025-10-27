@@ -1,0 +1,22 @@
+From 9ed4ae9cf207360000742c09007a32ad144b52db Mon Sep 17 00:00:00 2001
+From: matik <wierzejskimateusz8@gmail.com>
+Date: Mon, Oct 27 13:18:00 2025 +0100
+Subject: [PATCH] fix libshadow (note: credits to original author: fafryd <dz1125.bug.tracker@gmail.com>)
+
+---
+ hw/xfree86/dixmods/meson.build | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hw/xfree86/dixmods/meson.build b/hw/xfree86/dixmods/meson.build
+index e51e50797..451bdf6bb 100644
+--- a/hw/xfree86/dixmods/meson.build
++++ b/hw/xfree86/dixmods/meson.build
+@@ -24,6 +24,7 @@ shared_module(
+ 
+     install: true,
+     install_dir: module_abi_dir,
++    install_rpath: '$ORIGIN/./',
+ )
+ 
+ if build_glx
+ 
