@@ -2,6 +2,8 @@
 
 This repository contains Alpine Linux APKBUILD files for [XLibre](https://github.com/X11Libre) - a modern fork of the X.Org X Window System.
 
+To see the Chimera version (cports), see branch [chimera](https://github.com/xlibre-alpine/xlibre-ports/tree/chimera)
+
 ## What is XLibre?
 
 XLibre is a community-driven fork of X.Org that aims to modernize and maintain the X Window System while keeping it backwards compatible with the original X.Org. This repository provides Alpine Linux packages for the XLibre X server and its associated drivers.
@@ -153,7 +155,7 @@ When adding new packages:
 ## TODO
 
 - [ ] Build and package Xlibre once a new version is released via GitHub Actions
-- [ ] Add support for Chimera Linux
+- [x] Add support for Chimera Linux
 
 ## Related Links
 
