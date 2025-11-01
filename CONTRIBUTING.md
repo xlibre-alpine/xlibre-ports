@@ -62,7 +62,7 @@ into that branch, the command line will offer you a link to create your PR.
 If there are any issues with your PR, a reviewer will point them out and possibly
 suggest changes. Follow any review instructions until the changes are approved.
 
-There is no CLA in Chimera, likewise there is no copyright assignment or any
+There is no CLA in xlibre-ports, likewise there is no copyright assignment or any
 such thing.
 
 ## Getting your changes merged
