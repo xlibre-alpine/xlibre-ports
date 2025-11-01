@@ -1,7 +1,7 @@
 # Contributor: Łukasz Jendrysik <scadu@yandex.com>
 maintainer="matik <wierzejskimateusz8@gmail.com>"
 pkgname=xlibre-xserver
-pkgver=25.0.0.12
+pkgver=25.0.0.14
 pkgrel=0
 pkgdesc="XLibre X servers"
 url="https://github.com/X11Libre/xserver"
@@ -258,5 +258,5 @@ common() {
 }
 
 sha512sums="
-de529ac3c05f0825c0d5d721831e91bdf77f3b3193ffe7fb899402009d9feb97f6b7a9de803c0a0584cde9fa7bedbd467faec0637f06724fabe77755531b1b40  xlibre-xserver-25.0.0.12.tar.gz
+3d75eb33d1a16d5cab1adaf35570ec76ebff0998784727a9c250cc19662d76552b9db95d59a3501a9d89d77b51d44ff003a5a688be5e61312b48fbcf2d427165  xlibre-xserver-25.0.0.14.tar.gz
 "
