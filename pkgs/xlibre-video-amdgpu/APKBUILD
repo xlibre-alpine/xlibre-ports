@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-amdgpu
-pkgver=23.0.0.5
+pkgver=23.0.0.6
 pkgrel=0
 pkgdesc="Xlibre AMD Rx/HDxxxx video driver"
 url="https://github.com/X11Libre/xf86-video-amdgpu"
@@ -49,5 +49,5 @@ package() {
 }
 
 sha512sums="
-c8364dc676fd008342cff72dace8a51bcf4253d7ae4238eeabe872db97a787ec89c76da64aa14b1d3d2dce9f9f3ebc20ceaf2f8c2f093cc73fccc6ba3e19f1a5  xlibre-xf86-video-amdgpu-23.0.0.5.tar.gz
+b5f66ac7f2406188f1e948a0236af3924ff18c348f43d742332b7c08735a50cabbff4bf8b2cc42caef1ca2bcd89511fc6931a01bb4cd052d91ff2f84ad125303  xlibre-xf86-video-amdgpu-23.0.0.6.tar.gz
 "

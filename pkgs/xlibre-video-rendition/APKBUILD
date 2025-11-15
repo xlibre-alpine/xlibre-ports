@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-rendition
-pkgver=4.2.7.1
+pkgver=4.2.7.2
 pkgrel=0
 pkgdesc="Xlibre Rendition video driver"
 url="https://github.com/X11Libre/xf86-video-rendition"
@@ -35,10 +35,10 @@ package() {
 	make DESTDIR="$pkgdir" install
 
 	# Stripping manually
-	strip $pkgdir/usr/lib/xorg/modules/drivers/rendition_drv.so
+	strip $pkgdir/usr/lib/xorg/modules/xlibre-25.0/drivers/rendition_drv.so
 	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
 }
 
 sha512sums="
-c91cbd92f3dc26772593d71d7c3149464fce09eeb1092860d8d2afc85006ffa7c6b132d5ddfe87e68f4486acc2124547723d0508571ab0dec9deaefd7600d876  xlibre-xf86-video-rendition-4.2.7.1.tar.gz
+54eb8fa425b4f014064234bd468acb5bfc6952037c42ca3b309f2e295b8f090f9cc1db13f693c4ee545cea4c021642d95e6d4ecb84664df2eef37066944fd7e4  xlibre-xf86-video-rendition-4.2.7.2.tar.gz
 "

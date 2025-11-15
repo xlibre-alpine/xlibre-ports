@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-r128
-pkgver=6.13.0.2
+pkgver=6.13.0.3
 pkgrel=0
 pkgdesc="Xlibre ATI Rage128 video driver"
 url="https://github.com/X11Libre/xf86-video-r128"
@@ -53,5 +53,5 @@ package() {
 }
 
 sha512sums="
-15cc368a4276b0551f3c6845ad340ec78cd9d96a8d0a460d63a0205e4d3f364bc655ffdf9f5fd1ec21f84b5b138b1c9e0cdddaa58c62178992ee5365c85e4c5f  xlibre-xf86-video-r128-6.13.0.2.tar.gz
+b2c47013014aa16a839f0122e07cbac5d4931cd338a40d8d4d1c04efb9e566c2c5c9f672ef31cb3b2377fe89219d4af8a8dfeca67e83bddadfc22df5a9fb9527  xlibre-xf86-video-r128-6.13.0.3.tar.gz
 "

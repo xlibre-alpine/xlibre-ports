@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-chips
-pkgver=1.5.0.1
+pkgver=1.5.0.2
 pkgrel=0
 pkgdesc="Xlibre Chips and Technologies video driver"
 url="https://github.com/X11Libre/xf86-video-chips"
@@ -42,5 +42,5 @@ package() {
 }
 
 sha512sums="
-7db10884d1044346b705e9a6870189dac3360fed6c57c30e974b8cd7c1e5d59ad88a13e1970886991e37ebd9af3fa37a6a937ad0177b83fefcd965db1a801389  xlibre-xf86-video-chips-1.5.0.1.tar.gz
+d8a57e9093fe1d71da753684db5a9ed136aa56b94990258fef3844e7f3d5e1bf22a53cb5e7b19c828b1f984da5d1498061ed85c96b8d69621715375d833dc4d9  xlibre-xf86-video-chips-1.5.0.2.tar.gz
 "
