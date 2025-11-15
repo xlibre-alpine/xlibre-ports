@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-s3virge
-pkgver=1.11.1.1
+pkgver=1.11.1.2
 pkgrel=0
 pkgdesc="Xlibre S3 ViRGE video driver"
 url="https://github.com/X11Libre/xf86-video-s3virge"
@@ -40,5 +40,5 @@ package() {
 
 
 sha512sums="
-92b26039eb4fb7fd0e8486be238431eeb97f8165384c34297fbd21d356e2570928f70a859615cccfb6730f3b6f96148de64cbcb9a51f705f0ca0cb18ac7c55ab  xlibre-xf86-video-s3virge-1.11.1.1.tar.gz
+1948b76e5cd87d5ab769e2c8d2405d5691ef64b482c1559aad9705034357021c52285cf9c58c16958e9d55f148defc656bf2a5444fc22e34711b75e175503b9c  xlibre-xf86-video-s3virge-1.11.1.2.tar.gz
 "

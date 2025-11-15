@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-i740
-pkgver=1.4.0.1
+pkgver=1.4.0.2
 pkgrel=0
 pkgdesc="Xlibre Intel i740 video driver"
 url="https://github.com/X11Libre/xf86-video-i740"
@@ -39,5 +39,5 @@ package() {
 }
 
 sha512sums="
-f03e8653069eef1a03990420df79f73de191db70ebeb09dd5e9cc9ca570b89f9a3a99a8e938fb9997d4632dca16dd82d5616d4b712a40b80564227cffa340a1b  xlibre-xf86-video-i740-1.4.0.1.tar.gz
+6fb3fe3feb143abfa1c8fa52e74315c90ae3697b3f15428984cd160735e0cbe3ec3738458ccc0fd774318e0708eed13fb74b08b0297fec7781f21d96707b895e  xlibre-xf86-video-i740-1.4.0.2.tar.gz
 "

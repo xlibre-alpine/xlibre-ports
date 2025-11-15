@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-i128
-pkgver=1.4.1.1
+pkgver=1.4.1.2
 pkgrel=3
 pkgdesc="Xlibre driver for I128 video cards"
 url="https://xorg.freedesktop.org"
@@ -39,5 +39,5 @@ package() {
 }
 
 sha512sums="
-4e75e60a5ff0d2b0ab9c8671b00e65e376e4e7c0e0c63f90b35b833e803d7487af6ea1dd6e5a863e4b8e040e8a4fa5930cb0e805d0f224619c0d8ce882833773  xlibre-xf86-video-i128-1.4.1.1.tar.gz
+ca398816ee40812ab5dff80a9ef7ad89bcdbbf1f0b5de3c7048909731cae6a4f851eda4bd6b552bab4df8df13d5e821307f965d9f3773377e957aea4bedc2621  xlibre-xf86-video-i128-1.4.1.2.tar.gz
 "
