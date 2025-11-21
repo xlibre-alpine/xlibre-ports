@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-ast
-pkgver=1.2.0.1
+pkgver="1.2.0.1"
 pkgrel=0
 pkgdesc="Xlibre driver for ASpeedTech cards"
 url="https://github.com/X11Libre/xf86-video-ast"

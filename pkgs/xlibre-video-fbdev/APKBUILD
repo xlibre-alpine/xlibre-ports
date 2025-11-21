@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-fbdev
-pkgver=0.5.1.2
+pkgver="0.5.1.2"
 pkgrel=0
 pkgdesc="Xlibre video driver for framebuffer device"
 url="https://github.com/X11Libre/xf86-video-fbdev"

@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-nv
-pkgver=2.1.23.2
+pkgver="2.1.23.2"
 pkgrel=0
 pkgdesc="Xlibre Nvidia video driver"
 url="https://github.com/X11Libre/xf86-video-nv"

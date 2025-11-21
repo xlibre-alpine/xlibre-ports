@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-sis
-pkgver=0.12.0.2
+pkgver="0.12.0.2"
 pkgrel=0
 pkgdesc="Xlibre SiS video driver"
 url="https://github.com/X11Libre/xf86-video-sis"

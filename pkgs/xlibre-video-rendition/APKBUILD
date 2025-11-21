@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-rendition
-pkgver=4.2.7.2
+pkgver="4.2.7.2"
 pkgrel=0
 pkgdesc="Xlibre Rendition video driver"
 url="https://github.com/X11Libre/xf86-video-rendition"

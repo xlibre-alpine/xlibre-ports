@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-omap
-pkgver=0.4.5.2
+pkgver="0.4.5.2"
 pkgrel=0
 pkgdesc="OMAP3+ framebuffer driver for Xlibre"
 url="https://github.com/X11Libre/xf86-video-omap"

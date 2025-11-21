@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-nouveau
-pkgver=1.0.18.3
+pkgver="1.0.18.4"
 pkgrel=0
 pkgdesc="Open-source Xlibre drivers for nVidia video cards"
 url="https://github.com/X11Libre/xf86-video-nouveau"
@@ -42,5 +42,5 @@ package() {
 }
 
 sha512sums="
-252c2ce0b086e5f11737455aebbb4c6ddb278c272f9bdc048d27c49726ba7a7b30af42aba9453cf41c0dddc7c833b3f72eb5390a668c75568d0b064811ec0aac  xlibre-xf86-video-nouveau-1.0.18.3.tar.gz
+33173bf81ec3fada9e13af9a96d60a618f873fde299e1c53b2344d4b40541f16fafce8c104b6b6b7b975a9f805ffa0953d523fa41edca2d68f3b69abcd66bb38  xlibre-xf86-video-nouveau-1.0.18.4.tar.gz
 "

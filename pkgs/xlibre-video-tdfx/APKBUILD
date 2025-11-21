@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-tdfx
-pkgver=1.5.0.2
+pkgver="1.5.0.2"
 pkgrel=0
 pkgdesc="Xlibre 3Dfx video driver"
 url="https://github.com/X11Libre/xf86-video-tdfx"

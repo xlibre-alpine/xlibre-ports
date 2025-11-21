@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-ati
-pkgver=22.0.0.3
+pkgver="22.0.0.4"
 pkgrel=0
 pkgdesc="Xlibre ATI video driver"
 url="https://github.com/X11Libre/xf86-video-ati"
@@ -51,5 +51,5 @@ package() {
 }
 
 sha512sums="
-a562f2c7ddd3b28c019f58ecedfb7564254fbaabed34b1c8a132ae8c23ce0ec129a9d4d2ff344766812de6f17df1de5dd7aa11051a661f216955fa743629e861  xlibre-xf86-video-ati-22.0.0.3.tar.gz
+0ffb9dd827d9e793c7272486008d35d01422744fb8c8278435b6ff6e1422bc6e8d2682ef3ffb2c78e58b7bf97f851fdb0abf028946517345d543f051dd36368a  xlibre-xf86-video-ati-22.0.0.4.tar.gz
 "

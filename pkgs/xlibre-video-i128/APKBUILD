@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-i128
-pkgver=1.4.1.2
+pkgver="1.4.1.2"
 pkgrel=3
 pkgdesc="Xlibre driver for I128 video cards"
 url="https://xorg.freedesktop.org"

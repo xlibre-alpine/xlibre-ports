@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-ark
-pkgver=0.7.6.2
+pkgver="0.7.6.2"
 pkgrel=0
 pkgdesc="Xlibre driver for ark cards"
 url="https://github.com/X11Libre/xf86-video-ark"

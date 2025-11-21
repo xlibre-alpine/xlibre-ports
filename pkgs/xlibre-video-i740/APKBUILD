@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-i740
-pkgver=1.4.0.2
+pkgver="1.4.0.2"
 pkgrel=0
 pkgdesc="Xlibre Intel i740 video driver"
 url="https://github.com/X11Libre/xf86-video-i740"

@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-qxl
-pkgver=0.1.6.2
+pkgver="0.1.6.3"
 pkgrel=0
 pkgdesc="Xlibre QXL video driver"
 options="!check" # No testsuite
@@ -58,5 +58,5 @@ xspice() {
 }
 
 sha512sums="
-6b15f3c168dbd1aae0555fe73b1e5c05d9cd9e59234814400c37cc54794b46341938c813f42b6df4db73e0b36d283053665835924392a589531779fb1d51938f  xlibre-xf86-video-qxl-0.1.6.2.tar.gz
+3627e69e46da461d937f2134134e12efdf3e2d3691b16e2c745bc033d08159b0384805af2d213aae74d956c029f58ee19776552fb7beefef2453ec889c16931a  xlibre-xf86-video-qxl-0.1.6.3.tar.gz
 "
