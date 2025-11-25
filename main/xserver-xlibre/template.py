@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre"
 pkgver = "25.0.0.16"
-pkgrel = 0
+pkgrel = 1
 build_style = "meson"
 _fontroot = "/usr/share/fonts"
 configure_args = [
@@ -90,7 +90,9 @@ depends = [
     self.with_pkgver("xserver-xlibre-minimal"),
 ]
 provides = ["xserver-xorg"]
+provider_priority = 100
 replaces = ["xserver-xorg"]
+replaces_priority = 100
 pkgdesc = "Xlibre X server"
 license = "MIT AND BSD-3-Clause"
 url = "https://github.com/X11Libre/xserver"
@@ -137,6 +139,8 @@ def _(self):
     self.pkgdesc = "Nested X server that runs as an X application"
     self.provides = ["xserver-xorg-xnest"]
     self.replaces = ["xserver-xorg-xnest"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
 
     return ["usr/bin/Xnest", "usr/share/man/man1/Xnest.1"]
 
@@ -146,6 +150,8 @@ def _(self):
     self.pkgdesc = "X server outputting to a window on a pre-existing display"
     self.provides = ["xserver-xorg-xephyr"]
     self.replaces = ["xserver-xorg-xephyr"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return ["usr/bin/Xephyr", "usr/share/man/man1/Xephyr.1"]
 
 
@@ -155,6 +161,8 @@ def _(self):
     self.depends += ["xkeyboard-config", "xauth", "ugetopt"]
     self.provides = ["xserver-xorg-xvfb"]
     self.replaces = ["xserver-xorg-xvfb"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return [
         "usr/bin/Xvfb",
         "usr/bin/xvfb-run",
@@ -169,7 +177,7 @@ def _(self):
     # check if this needs to be updated when updating
     self.depends += [
         "so:libEGL.so.1!mesa-egl-libs",
-        "xserver-xlibre-protocol>=20180227",
+        "xserver-xorg-protocol>=20180227", # https://github.com/xlibre-alpine/xlibre-ports/issues/4
         "xkeyboard-config",
     ]
     self.provides = [
@@ -180,6 +188,7 @@ def _(self):
     ]
     self.replaces = ["xserver-xorg-core"]
     self.replaces_priority = 100
+    self.provider_priority = 100
     self.file_modes = {"usr/lib/Xorg.wrap": ("root", "root", 0o4755)}
     return [
         "usr/bin/X",
@@ -204,6 +213,8 @@ def _(self):
     self.options = ["empty"]
     self.provides = ["xserver-xorg-minimal"]
     self.replaces = ["xserver-xorg-minimal"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return []
 
 
@@ -214,6 +225,8 @@ def _(self):
     self.options = ["empty"]
     self.provides = ["xserver-xorg-input-none"]
     self.replaces = ["xserver-xorg-input-none"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return []
 
 
@@ -233,4 +246,6 @@ def _(self):
     ]
     self.provides = ["xserver-xorg-devel"]
     self.replaces = ["xserver-xorg-devel"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return self.default_devel()

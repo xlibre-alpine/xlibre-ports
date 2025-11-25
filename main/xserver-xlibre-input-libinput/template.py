@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre-input-libinput"
 pkgver = "1.5.1.0"
-pkgrel = 0
+pkgrel = 1
 build_style = "gnu_configure"
 hostmakedepends = [
     "automake",
@@ -13,8 +13,10 @@ depends = [
     "virtual:xserver-abi-input~24!xserver-xlibre-core",
     "xserver-xlibre-core",
 ]
-provides = [self.with_pkgver("xserver-xlibre-input-driver")]
+provides = ["xserver-xlibre-input-driver", "xserver-xorg-input-libinput"]
+provider_priority = 100
 replaces = ["xserver-xorg-input-libinput"]
+replaces_priority = 100
 pkgdesc = "Generic input driver for XLibre server based on libinput"
 license = "MIT"
 url = "https://github.com/X11Libre/xf86-input-libinput"
@@ -28,6 +30,7 @@ def post_install(self):
 
 @subpackage("xserver-xlibre-input-libinput-devel")
 def _(self):
+    self.provider_priority = 100
     self.provides = ["xserver-xorg-input-libinput-devel"]
     self.replaces = ["xserver-xorg-input-libinput-devel"]
     return self.default_devel()

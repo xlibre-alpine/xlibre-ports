@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre-input-wacom"
 pkgver = "1.2.3.2"
-pkgrel = 0
+pkgrel = 1
 build_style = "gnu_configure"
 hostmakedepends = [
     "automake",
@@ -22,8 +22,10 @@ depends = [
     "virtual:xserver-abi-input~24!xserver-xlibre-core",
     "xserver-xlibre-core",
 ]
-provides = [self.with_pkgver("xserver-xlibre-input-driver")]
+provides = ["xserver-xlibre-input-driver", "xserver-xorg-input-wacom"]
+provider_priority = 100
 replaces = ["xserver-xorg-input-wacom"]
+replaces_priority = 100
 pkgdesc = "XLibre Wacom tablet input driver"
 license = "GPL-2.0-or-later"
 url = "https://github.com/X11Libre/xf86-input-wacom"
@@ -37,6 +39,8 @@ def post_install(self):
 
 @subpackage("xserver-xlibre-input-wacom-devel")
 def _(self):
-    self.provides = ["xserver-xorg-input-wacom-devel"]
     self.replaces = ["xserver-xorg-input-wacom-devel"]
+    self.provides = ["xserver-xorg-input-wacom-devel"]
+    self.provider_priority = 100
+    self.replaces_priority = 100
     return self.default_devel()
