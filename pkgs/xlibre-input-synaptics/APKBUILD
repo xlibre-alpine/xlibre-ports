@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-input-synaptics
-pkgver=1.10.0.2
+pkgver="1.10.0.2"
 pkgrel=0
 pkgdesc="Xlibre Synaptics touchpad input driver"
 url="https://github.com/X11Libre/xf86-input-synaptics"

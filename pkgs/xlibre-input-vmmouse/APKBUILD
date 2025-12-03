@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-input-vmmouse
-pkgver=13.2.0.3
+pkgver="13.2.0.3"
 pkgrel=0
 pkgdesc="Xlibre VMware mouse input driver"
 url="https://github.com/X11Libre/xf86-input-vmmouse"

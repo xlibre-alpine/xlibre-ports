@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-intel
-pkgver="3.0.0.4"
+pkgver="3.0.0.5"
 pkgrel=0
 pkgdesc="Xlibre driver for Intel video cards"
 url="https://github.com/X11Libre/xf86-video-intel"
@@ -72,5 +72,5 @@ package() {
 
 
 sha512sums="
-75f94dba9979edbabcae22d987a9a39e6f596dc68a006678336d2329afaba8b8c1d6fc2ad6dad711fa6f558f3a8be0485cef02c6c808016d7b511b7193fc2c5d  xlibre-xf86-video-intel-3.0.0.4.tar.gz
+10031abff44e4b49bd454d7b65d653c90be8020bc6f2b694e5a624bd02d48d54f3f7e73fdeb0297a4dcf1cf9be289275d71dbfc0fbc0e032c4fbbb2030d20b7a  xlibre-xf86-video-intel-3.0.0.5.tar.gz
 "
