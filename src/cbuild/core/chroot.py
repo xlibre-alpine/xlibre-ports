@@ -6,6 +6,7 @@ import errno
 import shutil
 import pathlib
 import binascii
+import urllib.request
 from tempfile import mkstemp, mkdtemp
 
 from cbuild.core import logger, paths, errors
@@ -15,6 +16,7 @@ from cbuild.util import flock
 _chroot_checked = False
 _chroot_ready = False
 _extra_pkgs = []
+_apk_static_base = "https://repo.chimera-linux.org/apk/3.0.0_rc4-r2"
 
 
 def host_cpu():
@@ -153,6 +155,38 @@ def _prepare():
 
     with open(sfpath, "w") as sf:
         sf.write(host_cpu() + "\n")
+
+
+def _ensure_apk_static():
+    try:
+        with open("/etc/os-release") as _osrel:
+            osrel = _osrel.read()
+    except OSError:
+        return
+
+    if "ID=alpine" not in osrel and "ID_LIKE=alpine" not in osrel:
+        return
+
+    dest = paths.bldroot() / "usr/bin/apk.static"
+    if dest.is_file():
+        return
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    arch = os.uname().machine
+    url = f"{_apk_static_base}/apk-{arch}.static"
+
+    logger.get().out(f"cbuild: fetching static apk for {arch}...")
+
+    try:
+        with urllib.request.urlopen(url) as resp, open(dest, "wb") as outf:
+            shutil.copyfileobj(resp, outf)
+    except Exception as e:
+        raise errors.CbuildException(
+            f"failed to download static apk from {url}"
+        ) from e
+
+    os.chmod(dest, 0o755)
+    paths.set_apk(dest)
 
 
 def setup_keys(rootp):
@@ -308,6 +342,9 @@ def install():
     logger.get().out(f"cbuild: installing {' '.join(_extra_pkgs)}...")
 
     initdb()
+    # --usermode cannot be used on Alpine Linux 3.23's apk-tools because it segfaults
+    # as a workaround, use Chimera Linux's static version of apk-tools if Alpine is detected
+    _ensure_apk_static()
 
     setup_keys(paths.bldroot())
 
@@ -452,7 +489,6 @@ def _setup_dummy(rootp, archn):
             raise errors.CbuildException(
                 f"failed to index virtual provider for {archn}"
             )
-
         ret = apki.call(
             "add",
             ["--no-scripts", "--usermode", "--repository", tmpd, pkgn],
