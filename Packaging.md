@@ -1816,6 +1816,11 @@ the template including for subpackages:
   there are any strippable debug symbols. By setting this to `false`,
   you can disable passing of debug options to the compiler, as well as
   prevent generation of debug packages.
+* `eepy` *(false)* Sometimes a build gets low energy and doesn't output
+  anything in a few hours. That does not mean it will not finish however,
+  just gotta give it time. Apply to templates that are known to take
+  more than 4 hours to make cbuild meow to stdout every hour and prevent
+  our infrastructure from terminating the build.
 * `check` *(true)* By disabling this you can ensure the `check` phase
   is never run, even if enabled and enforced in the build system. A
   reason should always be provided as a comment above the `options`
@@ -3772,8 +3777,11 @@ llvm-12.0.0 -> llvm-12.0.1
 llvm-12.0.0 -> llvm-13.0.0
 ```
 
-If you pass an extra argument with any value, it will be verbose, printing
-extra messages along the way.
+Using `-v` or `--verbose` causes the output to be more detailed, not only
+showing updates but also all intermediate versions that were found by the
+checker.
+
+Multiple packages may be passed for the update check.
 
 The update checking can be tweaked by creating the file `update.py` in the
 same directory with the template. This file is a Python source file

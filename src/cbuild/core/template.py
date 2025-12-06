@@ -366,6 +366,7 @@ default_options = {
     "execstack": (False, False),
     "foreignelf": (False, False),
     "parallel": (True, True),
+    "eepy": (False, True),
     "debug": (True, True),
     "strip": (True, False),
     "check": (True, True),
@@ -762,6 +763,7 @@ class Template(Package):
         self.current_sonames = {}
         self._license_install = False
         self._depends_setup = False
+        self.verbose = logger.verbose()
 
         # assorted inputs
         self.template_path = tmplp
