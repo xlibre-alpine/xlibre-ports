@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre"
 pkgver = "25.0.0.16"
-pkgrel = 1
+pkgrel = 0
 build_style = "meson"
 _fontroot = "/usr/share/fonts"
 configure_args = [

@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre-input-evdev"
-pkgver = "2.11.0.2"
-pkgrel = 1
+pkgver = "25.0.0"
+pkgrel = 0
 build_style = "gnu_configure"
 hostmakedepends = [
     "automake",
@@ -26,7 +26,7 @@ pkgdesc = "Generic input driver for XLibre server based on evdev"
 license = "MIT"
 url = "https://github.com/X11Libre/xf86-input-evdev"
 source = f"https://github.com/X11Libre/xf86-input-evdev/archive/refs/tags/xlibre-xf86-input-evdev-{pkgver}.tar.gz"
-sha256 = "70a8a65ec56cce7057b8491f68744c6883debe8750948bb290ae7b1c3ec28dfc"
+sha256 = "c810cc2d4ba63ee917f40b12e8e09c3e046653badcaace6897561dd3087944e8"
 
 
 def post_install(self):

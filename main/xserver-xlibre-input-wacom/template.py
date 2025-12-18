@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre-input-wacom"
-pkgver = "1.2.3.2"
-pkgrel = 1
+pkgver = "25.0.0"
+pkgrel = 0
 build_style = "gnu_configure"
 hostmakedepends = [
     "automake",
@@ -30,7 +30,7 @@ pkgdesc = "XLibre Wacom tablet input driver"
 license = "GPL-2.0-or-later"
 url = "https://github.com/X11Libre/xf86-input-wacom"
 source = f"https://github.com/X11Libre/xf86-input-wacom/archive/refs/tags/xlibre-xf86-input-wacom-{pkgver}.tar.gz"
-sha256 = "8c1942cbf90ee80d6505d115bab27461680c623d7acddf6be931224ea8176c36"
+sha256 = "12878547b271f4e59ecd5098f935d4c0bd4560d0c2a3a667385d916bc63d00af"
 
 
 def post_install(self):

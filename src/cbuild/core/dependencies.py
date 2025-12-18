@@ -242,6 +242,8 @@ def _get_vers(pkgs, pkg, sysp, arch):
 
 
 def _is_available(pkgn, pkgop, pkgv, pkg, vers, crepos, sysp, arch):
+    if vers is None:
+        return None
     if pkgn not in vers:
         return None
 

@@ -1,6 +1,6 @@
 pkgname = "xserver-xlibre-input-libinput"
-pkgver = "1.5.1.0"
-pkgrel = 1
+pkgver = "25.0.0"
+pkgrel = 0
 build_style = "gnu_configure"
 hostmakedepends = [
     "automake",
@@ -21,7 +21,7 @@ pkgdesc = "Generic input driver for XLibre server based on libinput"
 license = "MIT"
 url = "https://github.com/X11Libre/xf86-input-libinput"
 source = f"https://github.com/X11Libre/xf86-input-libinput/archive/refs/tags/xlibre-xf86-input-libinput-{pkgver}.tar.gz"
-sha256 = "f1be5a443af78307af18103a6bb614021fe163380b0eb43dec820a2389fbd6c8"
+sha256 = "aa7369a0a3834876ba11659cc663105a1511651d7ac2be2338e5d195283fbd00"
 
 
 def post_install(self):
