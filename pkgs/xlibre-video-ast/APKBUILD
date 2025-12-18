@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-ast
-pkgver="1.2.0.1"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre driver for ASpeedTech cards"
 url="https://github.com/X11Libre/xf86-video-ast"
@@ -41,5 +41,5 @@ package() {
 }
 
 sha512sums="
-ae21a86c87a9bd25d5cf4ca57db259932598848deb409660d12b1e6c5f5784cd4d100b08b6f8a6bf8ac87e199a63c4a92c6d2abd256bad4b43dc4d63dc2d8ca8  xlibre-xf86-video-ast-1.2.0.1.tar.gz
+c95fe81749d6da33753c984c3b79748d968fd1e3abcf358c36e5c4a9813d68aa2bdf2b5bcaf37dd1786a4eb2f1d696611ee64c8c2b7c1fb32d69c8ae1d259779  xlibre-xf86-video-ast-25.0.0.tar.gz
 "

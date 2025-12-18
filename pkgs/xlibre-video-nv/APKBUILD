@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-nv
-pkgver="2.1.23.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre Nvidia video driver"
 url="https://github.com/X11Libre/xf86-video-nv"
@@ -10,7 +10,6 @@ subpackages="$pkgname-doc"
 makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
 source="
 https://github.com/X11Libre/xf86-video-nv/archive/refs/tags/xlibre-xf86-video-nv-$pkgver.tar.gz
-gcc14-revert-fix-nv-powerpc.patch
 "
 builddir="$srcdir/xf86-video-nv-xlibre-xf86-video-nv-$pkgver"
 provides="xf86-video-nv=$pkgver-r$pkgrel"
@@ -42,6 +41,5 @@ package() {
 }
 
 sha512sums="
-40db4cf250ff85df29c66c823bd01f4e661345778d496394805196c22ef3b39eb35f192410dbffafaf4f4d7d52680f7b2742c6be79e0c0b4fdea5f003c86b3c7  xlibre-xf86-video-nv-2.1.23.2.tar.gz
-3c127965791203a2e1d18eb3acff5516d93e3e3ffaa146f0fcb476d4e4cd9a1b10ad0438821bdbf1bbfc5e60a72ea6c304e0d39f12bef0a312822d7d219ecd6b  gcc14-revert-fix-nv-powerpc.patch
+c2bd3a2f0618049fa1cee9c41dddb29146d54b9e292c71f0bd3ec993314483e7cbdab23c80c337b9e5a4e144edc8903bc1f24357cfd3618a26f15e19e7fd1d6d  xlibre-xf86-video-nv-25.0.0.tar.gz
 "

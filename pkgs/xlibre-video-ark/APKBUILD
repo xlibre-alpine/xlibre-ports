@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-ark
-pkgver="0.7.6.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre driver for ark cards"
 url="https://github.com/X11Libre/xf86-video-ark"
@@ -40,5 +40,5 @@ package() {
 }
 
 sha512sums="
-b8d504b87eec058f94eb3b8c2fc937f835d191d108f36453c0afa7f6006c47fef7961015cd97e80c43f8f93c05cb191524481fe4555e8604f132586031246226  xlibre-xf86-video-ark-0.7.6.2.tar.gz
+6a7416ff03b265905c52c2001fa5c532c756c3620fc83566ef3d6d49d0bcea4991260a377659755de518d0f02464755f0e14ebc62d80e91570549ea51016017f  xlibre-xf86-video-ark-25.0.0.tar.gz
 "

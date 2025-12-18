@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-sis
-pkgver="0.12.0.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre SiS video driver"
 url="https://github.com/X11Libre/xf86-video-sis"
@@ -39,5 +39,5 @@ package() {
 }
 
 sha512sums="
-b4d42c9cc65490a0ad610055c1ae54c19964c51023c227eaf7a2766c4998e957d5a6f1874c4f6487ea7a97ea2e19a0ba7b78044dac87175e9f21e52573a8de7b  xlibre-xf86-video-sis-0.12.0.2.tar.gz
+a2d876b47ca5681b05d3a9bb244a1f5d38913df4a06bd662fae5e8f44a535f3044972b25cb78a6782e3dfd79bb17cdb3bc053445af537624a75426924ffe25f9  xlibre-xf86-video-sis-25.0.0.tar.gz
 "

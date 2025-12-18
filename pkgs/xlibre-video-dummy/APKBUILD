@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-dummy
-pkgver="0.4.1.4"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre driver for dummy cards"
 url="https://github.com/X11Libre/xf86-video-dummy"
@@ -37,5 +37,5 @@ package() {
 }
 
 sha512sums="
-fe8a1c1e05e7dc3aef3e66476223e695d178d20035869da203e711a9094584ab13e3c0facb2f70a2b505afba0f44a8fb4e72e43383824c97a2b088471d5d374f  xlibre-xf86-video-dummy-0.4.1.4.tar.gz
+90aa2e6745fe8f5191f21ccd01172f6aafd46c3cc01027c687cf9757dd9d961fb4b00880f4eeddc145d06b6da7b43b3ea8b2c40087a21f17db722038eaf0676f  xlibre-xf86-video-dummy-25.0.0.tar.gz
 "

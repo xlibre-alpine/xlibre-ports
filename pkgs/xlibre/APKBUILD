@@ -149,6 +149,7 @@ replaces="xorg-server xf86-video-modesetting"
 
 prepare() {
 	default_prepare
+	cd src/$builddir || return
 	sed -i -e 's/termio.h/termios.h/' hw/xfree86/os-support/xf86_OSlib.h
 }
 

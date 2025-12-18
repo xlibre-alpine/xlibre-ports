@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-siliconmotion
-pkgver="1.7.10.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre Silicon Motion video driver"
 url="https://github.com/X11Libre/xf86-video-siliconmotion"
@@ -39,5 +39,5 @@ package() {
 }
 
 sha512sums="
-f4cd254a79ac059d205f265c9871aa437a5ce028a27d8b9b5385a4d11040d4ec339a3b265c6eb389f2e487742f6af3478f841d87b5705ba653c48d0efe56f5b7  xlibre-xf86-video-siliconmotion-1.7.10.2.tar.gz
+0ed846d2a56fd3bd2acc77176d41b08f9b4ac456726f9e537eec80c4b9b797fd7b8178a4e6e3324c1d12eb2db466b8059cfd65e06118c5d6202a506d6b5aef20  xlibre-xf86-video-siliconmotion-25.0.0.tar.gz
 "

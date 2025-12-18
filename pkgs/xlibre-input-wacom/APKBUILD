@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-input-wacom
-pkgver="1.2.3.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre Wacom tablet input driver"
 url="https://github.com/X11Libre/xf86-input-wacom"
@@ -35,5 +35,5 @@ package() {
 }
 
 sha512sums="
-26681a46f3b944fc6b33e3fd6664c9c6d3e88bc27429324a107591e86bdb86b732a47cfccf396e408e5239ac31564e7e928e28fb693a1620cc4e97f0099d72e8  xlibre-xf86-input-wacom-1.2.3.2.tar.gz
+ccbef239329669b210ac361d605a9cb120e447d892b14d7563873d8ec7dc543e3403ec6a63c7303a2c57c643aaf797df3b0565c1883e0131cd71ada947c2f908  xlibre-xf86-input-wacom-25.0.0.tar.gz
 "

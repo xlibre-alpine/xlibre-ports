@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-apm
-pkgver="1.3.0.3"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre Alliance ProMotion video driver"
 url="https://github.com/X11Libre/xf86-video-apm"
@@ -39,5 +39,5 @@ package() {
 }
 
 sha512sums="
-e5c885261ac08cb24bba7f0353ea3a415351c1a164dc89c4049bce942f843216693ecf4400fc6a339a34de8a06ccf670fb4e0f85ed3279f2adfcdd1142e66938  xlibre-xf86-video-apm-1.3.0.3.tar.gz
+dd4b3005fcaf6bc92578d796c075ca3cd6155744b36d6f877e2da11df9bd6d7440c737a60aaa2db6e568ba06ee679925d712e94abc3e8329adc8da0e5861eecb  xlibre-xf86-video-apm-25.0.0.tar.gz
 "

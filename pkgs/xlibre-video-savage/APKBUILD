@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-savage
-pkgver="2.4.1.2"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre S3 Savage video driver"
 url="https://github.com/X11Libre/xf86-video-savage"
@@ -47,5 +47,5 @@ package() {
 }
 
 sha512sums="
-e63eeeb1fba63e1c6eb14ee233650aca5336ee46db94d7711a156b00b0ce730beb81c87bf258f0ba1564380c0e84cffe1d00bfd40157ebd3118e0c8467323f60  xlibre-xf86-video-savage-2.4.1.2.tar.gz
+01626f810e02d31d03f02daab38e963a0c0afd6df5031cae7f3d540b2e0a724eae9c96fc9a0e3cbfb39668c91bd1862f82d373af109140f4e2f347ad140c23c2  xlibre-xf86-video-savage-25.0.0.tar.gz
 "

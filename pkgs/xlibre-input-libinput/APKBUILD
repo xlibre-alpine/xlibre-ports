@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-input-libinput
-pkgver="1.5.1.0"
+pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre input driver based on libinput"
 url="https://github.com/X11Libre/xf86-input-libinput"
@@ -28,5 +28,5 @@ package() {
 }
 
 sha512sums="
-bfffbf2455febc7564a6240ec4f324cf18dfa80b08bdbea663f6b503c164bc8a2225963e04bd9e4f602ddfa613c83390e303b41ff776ddf2f7e99f7e45b6dcb6  xlibre-xf86-input-libinput-1.5.1.0.tar.gz
+f2f41330373802ffb2b0e9fb4538e8e8dbbd394a21c60eab1c5435efd1e06abe1a9f38167782457f8934fb62a16dd7b7009a5e1305eebf2304a3f00f28c9bdd3  xlibre-xf86-input-libinput-25.0.0.tar.gz
 "
