@@ -5,6 +5,10 @@ written specifically for the distribution using the Python scripting language.
 
 If you are familiar with cports, this is the same system based off [cports](https://github.com/chimera-linux/cports), but designed for just X11Libre as [this isn't getting upstreamed into cports](https://gts.chimera-linux.org/@chimera/statuses/01JYYNAB4GFQ8Q5JZZ92TRM4WF).
 
+This project is already getting being called out from the main Chimera developers [as "anyone who breaks their system with that fully deserves so and will be laughed at"](https://gts.q66.moe/@q66/statuses/01KCGZ33XYS5XBN1N95JGP6197) but this won't stop us from maintaining it. 
+
+**Issues will be sorted if you install a Xlibre package and then install any packages after that rely on X11 on your system, just hit us with an [issue report](https://github.com/xlibre-alpine/xlibre-ports/issues).**
+
 From user standpoint, it works similarly to many distro packaging systems (users
 of Void Linux `xbps-src` will most likely find it a little familiar) however it
 is not based on any existing system and should not be considered a variant of any.
