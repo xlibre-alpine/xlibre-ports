@@ -2,9 +2,119 @@ from cbuild.core import logger, template, paths, chroot
 from cbuild.apk import util as autil, cli as apki
 from cbuild.util import flock
 
+import os
+import urllib.request
+import subprocess
+import tempfile
+import shutil
+import pathlib
+
 # avoid re-parsing same templates every time; the pkgver will
 # never be conditional and that is the only thing we care about
 _tcache = {}
+
+
+def _ensure_apk_tools_static(pkg):
+    """
+    Download and extract the latest apk-tools-static-bin package from
+    Chimera Linux repository and place it in the bldroot.
+    """
+    dest = paths.bldroot() / "usr/bin/apk.static"
+    if dest.is_file():
+        return
+
+    # Get the current architecture
+    arch = chroot.host_cpu()
+    
+    # Download the apk-tools-static-bin package
+    version = "3.0.3-r0"
+    url = f"https://repo.chimera-linux.org/current/main/{arch}/apk-tools-static-bin-{version}.apk"
+    
+    logger.get().out(f"cbuild: fetching apk-tools-static-bin for {arch}...")
+    
+    # Create temporary directory for the download
+    tmpdir = tempfile.mkdtemp()
+    apk_file = os.path.join(tmpdir, "apk-tools-static-bin.apk")
+    
+    try:
+        # Download the APK file
+        with urllib.request.urlopen(url) as resp, open(apk_file, "wb") as outf:
+            shutil.copyfileobj(resp, outf)
+        
+        # Ensure destination directory exists
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Extract the APK file using apk-tools 3.x
+        # Use apk add with --root to extract to a temporary location
+        tmp_extract = tempfile.mkdtemp()
+        try:
+            # Initialize APK database in the temporary root
+            (pathlib.Path(tmp_extract) / "etc" / "apk").mkdir(parents=True, exist_ok=True)
+            (pathlib.Path(tmp_extract) / "usr" / "lib" / "apk" / "db").mkdir(parents=True, exist_ok=True)
+            (pathlib.Path(tmp_extract) / "usr" / "lib" / "apk" / "db" / "installed").touch()
+            
+            # Use apk to extract the package
+            apk_cmd = paths.apk()
+            ret = subprocess.run(
+                [
+                    apk_cmd,
+                    "add",
+                    "--root",
+                    tmp_extract,
+                    "--repositories-file",
+                    "/dev/null",
+                    "--no-scripts",
+                    "--allow-untrusted",
+                    "--no-interactive",
+                    apk_file,
+                ],
+                capture_output=True,
+            )
+            
+            if ret.returncode != 0:
+                err_msg = ret.stderr.decode() if ret.stderr else "unknown error"
+                raise RuntimeError(
+                    f"failed to extract apk-tools-static-bin: {err_msg}"
+                )
+            
+            # Find and copy the apk.static binary
+            # Check standard locations: usr/bin/apk.static, bin/apk.static, or root
+            apk_static_src = None
+            possible_paths = [
+                os.path.join(tmp_extract, "usr", "bin", "apk.static"),
+                os.path.join(tmp_extract, "bin", "apk.static"),
+                os.path.join(tmp_extract, "apk.static"),
+            ]
+            
+            for path in possible_paths:
+                if os.path.isfile(path):
+                    apk_static_src = path
+                    break
+            
+            # If not found in standard locations, search recursively
+            if not apk_static_src:
+                for root, dirs, files in os.walk(tmp_extract):
+                    if "apk.static" in files:
+                        apk_static_src = os.path.join(root, "apk.static")
+                        break
+            
+            if not apk_static_src or not os.path.isfile(apk_static_src):
+                raise RuntimeError("apk.static binary not found in extracted package")
+            
+            # Copy to destination
+            shutil.copy2(apk_static_src, dest)
+            os.chmod(dest, 0o755)
+            
+            # Update paths to use the static apk
+            paths.set_apk(dest)
+        finally:
+            shutil.rmtree(tmp_extract, ignore_errors=True)
+    except Exception as e:
+        raise RuntimeError(
+            f"failed to download/extract apk-tools-static-bin from {url}: {e}"
+        ) from e
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def _srcpkg_ver(pkgn, pkgb):
@@ -76,6 +186,8 @@ def _is_rdep(pn):
     elif pn.startswith("alt:"):
         return False
     elif pn.startswith("virtual:"):
+        return False
+    elif pn.startswith("soname:"):
         return False
 
     return True
@@ -227,8 +339,8 @@ def _get_vers(pkgs, pkg, sysp, arch):
             allow_untrusted=True,
             return_repos=True,
         )
-    if out.returncode != 0:
-        return None, None
+    if out.returncode >= len(plist):
+        return {}, None
 
     # map the output to a dict
     for f in out.stdout.strip().decode().split("\n"):
@@ -313,6 +425,13 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
         pkg.log(f"building{style} (dependency of {origpkg}) for {tarch}...")
     else:
         pkg.log(f"building{style} for {tarch}...")
+
+    # ensure apk-tools-static is available for stage > 0
+    if pkg.stage > 0:
+        try:
+            _ensure_apk_tools_static(pkg)
+        except Exception as e:
+            pkg.error(f"failed to ensure apk-tools-static: {e}")
 
     host_binpkg_deps = []
     binpkg_deps = []
