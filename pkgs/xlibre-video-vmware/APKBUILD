@@ -14,6 +14,9 @@ makedepends="
 	util-macros
 	xlibre-xserver-dev
 	xorgproto
+	autoconf 
+	automake
+	libtool
 	"
 source="https://github.com/X11Libre/xf86-video-vmware/archive/refs/tags/xlibre-xf86-video-vmware-$pkgver.tar.gz"
 builddir="$srcdir/xf86-video-vmware-xlibre-xf86-video-vmware-$pkgver"

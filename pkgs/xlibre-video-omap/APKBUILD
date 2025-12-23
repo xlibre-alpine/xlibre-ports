@@ -39,6 +39,3 @@ package() {
 	make DESTDIR="$pkgdir" install
 }
 
-sha512sums="
-89fbfd798c052366cbe6f85dc7fb80c346d294897ca1d88f7d7820bc18e5a76ed218e64a5ddf9d25baf55aad8a265b82ced58a05540e25fdf5a8c2dac8a4605b  xlibre-xf86-video-omap-25.0.0.tar.gz
-"

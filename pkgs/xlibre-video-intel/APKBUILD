@@ -4,7 +4,7 @@ pkgver="25.0.0"
 pkgrel=0
 pkgdesc="Xlibre driver for Intel video cards"
 url="https://github.com/X11Libre/xf86-video-intel"
-arch="all"
+arch="x86 x86_64"
 license="MIT"
 depends="mesa-dri-gallium"
 makedepends="
@@ -28,6 +28,9 @@ makedepends="
 	xcb-util-dev
 	xlibre-xserver-dev
 	xorgproto
+	autoconf 
+	automake
+	libtool
 	"
 subpackages="$pkgname-doc"
 source="https://github.com/X11Libre/xf86-video-intel/archive/refs/tags/xlibre-xf86-video-intel-$pkgver.tar.gz"

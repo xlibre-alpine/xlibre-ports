@@ -7,7 +7,7 @@ url="https://github.com/X11Libre/xf86-video-nv"
 arch="all"
 license="MIT"
 subpackages="$pkgname-doc"
-makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto"
+makedepends="xlibre-xserver-dev libxi-dev util-macros xorgproto autoconf automake libtool"
 source="
 https://github.com/X11Libre/xf86-video-nv/archive/refs/tags/xlibre-xf86-video-nv-$pkgver.tar.gz
 "

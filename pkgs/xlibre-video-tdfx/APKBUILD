@@ -37,6 +37,3 @@ package() {
 	make DESTDIR="$pkgdir" install
 }
 
-sha512sums="
-3cb0930859a60a4375026fa36b7b05aa01e812f377d65b8f29937a57bb4a3e38d017e606539e88cc53cb25fdd73881a6e90a7c5864000d77e0032b0466f09c2e  xlibre-xf86-video-tdfx-25.0.0.tar.gz
-"

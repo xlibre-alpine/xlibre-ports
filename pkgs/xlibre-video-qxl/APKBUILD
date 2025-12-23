@@ -5,9 +5,9 @@ pkgrel=0
 pkgdesc="Xlibre QXL video driver"
 options="!check" # No testsuite
 url="https://github.com/X11Libre/xf86-video-qxl"
-arch="x86 x86_64"
+arch="all"
 license="MIT"
-makedepends="xlibre-xserver-dev spice-dev xorgproto libpciaccess-dev"
+makedepends="xlibre-xserver-dev spice-dev xorgproto libpciaccess-dev autoconf automake libtool"
 subpackages="$pkgname-doc xspice"
 source="https://github.com/X11Libre/xf86-video-qxl/archive/refs/tags/xlibre-xf86-video-qxl-$pkgver.tar.gz"
 builddir="$srcdir/xf86-video-qxl-xlibre-xf86-video-qxl-$pkgver"
@@ -46,12 +46,12 @@ package() {
 xspice() {
 	pkgdesc="X server that can be accessed by a Spice client"
 	depends="python3"
-	mkdir -p "$subpkgdir"/usr/lib/xorg/modules/xlibre-25.0/drivers \
+	mkdir -p "$subpkgdir"/usr/lib/xorg/modules/xlibre-25/drivers \
 		"$subpkgdir"/etc/X11
-	mv "$pkgdir"/usr/lib/xorg/modules/xlibre-25.0/drivers/spiceqxl_drv.so \
-		"$subpkgdir"/usr/lib/xorg/modules/xlibre-25.0/drivers/
-	mv "$pkgdir"/usr/lib/xorg/modules/xlibre-25.0/drivers/spiceqxl_drv.la \
-		"$subpkgdir"/usr/lib/xorg/modules/xlibre-25.0/drivers/
+	mv "$pkgdir"/usr/lib/xorg/modules/xlibre-25/drivers/spiceqxl_drv.so \
+		"$subpkgdir"/usr/lib/xorg/modules/xlibre-25/drivers/
+	mv "$pkgdir"/usr/lib/xorg/modules/xlibre-25/drivers/spiceqxl_drv.la \
+		"$subpkgdir"/usr/lib/xorg/modules/xlibre-25/drivers/
 	mv "$pkgdir"/usr/bin/ "$subpkgdir"/usr/
 	install -m 644 "$builddir"/examples/spiceqxl.xorg.conf.example \
 		"$subpkgdir"/etc/X11/spiceqxl.xorg.conf

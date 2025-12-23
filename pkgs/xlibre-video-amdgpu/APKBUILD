@@ -17,6 +17,9 @@ makedepends="
 	util-macros
 	xlibre-xserver-dev
 	xorgproto
+	autoconf 
+	automake
+	libtool
 	"
 subpackages="$pkgname-doc"
 source="https://github.com/X11Libre/xf86-video-amdgpu/archive/refs/tags/xlibre-xf86-video-amdgpu-$pkgver.tar.gz"

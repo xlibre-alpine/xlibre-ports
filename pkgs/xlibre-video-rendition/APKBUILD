@@ -39,6 +39,3 @@ package() {
 	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
 }
 
-sha512sums="
-bc138c9f06b0d1bbb480d5021d63e15497d94713fb8d5a8e5996e50839254fd3e207add1270928e500d89238eeca4e987da9fc9ab3a4cc65b774437fddd1d39c  xlibre-xf86-video-rendition-25.0.0.tar.gz
-"
