@@ -38,3 +38,6 @@ package() {
 	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
 }
 
+sha512sums="
+a2d876b47ca5681b05d3a9bb244a1f5d38913df4a06bd662fae5e8f44a535f3044972b25cb78a6782e3dfd79bb17cdb3bc053445af537624a75426924ffe25f9  xlibre-xf86-video-sis-25.0.0.tar.gz
+"

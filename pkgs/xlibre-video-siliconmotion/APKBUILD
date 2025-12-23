@@ -38,3 +38,6 @@ package() {
 	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
 }
 
+sha512sums="
+0ed846d2a56fd3bd2acc77176d41b08f9b4ac456726f9e537eec80c4b9b797fd7b8178a4e6e3324c1d12eb2db466b8059cfd65e06118c5d6202a506d6b5aef20  xlibre-xf86-video-siliconmotion-25.0.0.tar.gz
+"
