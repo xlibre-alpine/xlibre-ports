@@ -24,9 +24,23 @@ depends="
 	xkbcomp
 	xkeyboard-config
 	xlibre-xserver-common
-	seatd
-	cmd:seatd-launch
 	"
+
+# current ARM64 builder (postmarketOS phone) conflicts installing libseatd-dev due to systemd-dev
+# so for the mean time allow configuring if seatd should be enabled or not 
+# to disable building seatd support, export shell envrionment variable withseatd to false
+# by default this will be set to true, but public ARM64 xlibre builds will have this set to false
+withseatd="${withseatd:-true}"
+
+case "$withseatd" in
+	true)
+	    depends="$depends seatd cmd:seatd-launch"
+	    ;;
+	*)
+	    depends="$depends"
+	    ;;
+esac
+
 depends_dev="
 	libepoxy-dev
 	libpciaccess-dev
@@ -45,7 +59,6 @@ makedepends="
 	libxext-dev
 	libxkbfile-dev
 	libxshmfence-dev
-	libseat-dev
 	meson
 	nettle-dev
 	pixman-dev
@@ -60,12 +73,19 @@ makedepends="
 	xorgproto
 	xtrans
 	"
+case "$withseatd" in
+        true)
+            makedepends="$depends libseat-dev"
+            ;;
+        *)
+            makedepends="$depends"
+            ;;
+esac
+
 checkdepends="
 	xdpyinfo
 	xrandr
 	xvinfo
-	seatd
-	cmd:seatd-launch
 	"
 source="https://github.com/X11Libre/xserver/archive/refs/tags/$pkgname-$pkgver.tar.gz"
 builddir=xserver-xlibre-xserver-$pkgver
@@ -169,6 +189,15 @@ build() {
 
 	# 32-bit fails otherwise
 	export CFLAGS="$CFLAGS -Wno-error=array-bounds"
+	
+	case "$withseatd" in
+	        true)
+	            seatdargs="-Dseatd_libseat=true"
+	            ;;
+	        *)
+	            seatdargs="-Dseatd_libseat=false"
+	            ;;
+	esac
 
 	abuild-meson \
 		-Db_lto=true \
@@ -198,7 +227,7 @@ build() {
 		-Ddri1=false \
 		-Ddri2=true \
 		-Ddri3=true \
-		-Dseatd_libseat=true \
+		$seatdargs \
 		. output
 	meson compile -C output
 }
