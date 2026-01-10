@@ -7,7 +7,16 @@ url="https://github.com/X11Libre/xf86-input-vmmouse"
 arch="x86 x86_64 arm64"
 license="MIT"
 subpackages="$pkgname-doc"
-makedepends="libxkbfile-dev xlibre-xserver-dev libxi-dev libxrandr-dev eudev-dev"
+makedepends="
+	libxkbfile-dev
+	xlibre-xserver-dev
+	libxi-dev
+	libxrandr-dev
+	eudev-dev
+	autoconf
+	automake
+	libtool
+"
 source="https://github.com/X11Libre/xf86-input-vmmouse/archive/refs/tags/xlibre-xf86-input-vmmouse-$pkgver.tar.gz"
 builddir="$srcdir/xf86-input-vmmouse-xlibre-xf86-input-vmmouse-$pkgver"
 provides="xf86-input-vmmouse=$pkgver-r$pkgrel"
