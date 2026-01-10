@@ -24,6 +24,8 @@ depends="
 	xkbcomp
 	xkeyboard-config
 	xlibre-xserver-common
+	seatd
+	cmd:seatd-launch
 	"
 depends_dev="
 	libepoxy-dev
@@ -43,6 +45,7 @@ makedepends="
 	libxext-dev
 	libxkbfile-dev
 	libxshmfence-dev
+	libseat-dev
 	meson
 	nettle-dev
 	pixman-dev
@@ -61,6 +64,8 @@ checkdepends="
 	xdpyinfo
 	xrandr
 	xvinfo
+	seatd
+	cmd:seatd-launch
 	"
 source="https://github.com/X11Libre/xserver/archive/refs/tags/$pkgname-$pkgver.tar.gz"
 builddir=xserver-xlibre-xserver-$pkgver
@@ -193,6 +198,7 @@ build() {
 		-Ddri1=false \
 		-Ddri2=true \
 		-Ddri3=true \
+		-Dseatd_libseat=true \
 		. output
 	meson compile -C output
 }
