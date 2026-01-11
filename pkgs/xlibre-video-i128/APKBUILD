@@ -1,7 +1,7 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-i128
 pkgver="25.0.0"
-pkgrel=3
+pkgrel=4
 pkgdesc="Xlibre driver for I128 video cards"
 url="https://xorg.freedesktop.org"
 arch="x86 x86_64"
@@ -21,7 +21,6 @@ prepare() {
 build() {
 	export CFLAGS="${CFLAGS/-fno-plt}"
 	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
-	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
 	./configure \
 		--build=$CBUILD \
 		--host=$CHOST \

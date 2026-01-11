@@ -1,7 +1,7 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-sis
 pkgver="25.0.0"
-pkgrel=0
+pkgrel=1
 pkgdesc="Xlibre SiS video driver"
 url="https://github.com/X11Libre/xf86-video-sis"
 arch="x86 x86_64"
@@ -21,7 +21,6 @@ prepare() {
 build() {
 	export CFLAGS="${CFLAGS/-fno-plt}"
 	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
-	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
 	./configure \
 		--build=$CBUILD \
 		--host=$CHOST \

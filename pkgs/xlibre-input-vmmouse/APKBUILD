@@ -1,7 +1,7 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-input-vmmouse
 pkgver="25.0.0"
-pkgrel=0
+pkgrel=1
 pkgdesc="Xlibre VMware mouse input driver"
 url="https://github.com/X11Libre/xf86-input-vmmouse"
 arch="x86 x86_64 arm64"
@@ -30,7 +30,6 @@ prepare() {
 build() {
 	export CFLAGS="${CFLAGS/-fno-plt}"
 	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
-	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
 	./configure \
 		--build=$CBUILD \
 		--host=$CHOST \

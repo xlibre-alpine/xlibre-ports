@@ -21,7 +21,6 @@ prepare() {
 build() {
 	export CFLAGS="${CFLAGS/-fno-plt}"
 	export CXXFLAGS="${CXXFLAGS/-fno-plt}"
-	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
 	./configure \
 		--build=$CBUILD \
 		--host=$CHOST \
