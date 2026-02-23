@@ -55,5 +55,5 @@ package() {
 }
 
 sha512sums="
-24983429c4e9632f78086d504e34bccfe817d4ff474a92badf707e4510bc31e6f53d2c198c38d65d84a56f84d9be407b5fa521dee5959e14dbe7c96c3754b4a4  xlibre-xf86-video-amdgpu-25.0.3.tar.gz
+40fca3a2f1a41aeedcefaff5fbc6f9556ee94b35844115cf595f99e98f83f33ec8184ebc95f811aabaf5cb798d229fb12dac7592dba66a112bf1f875972f7b07  xlibre-xf86-video-amdgpu-25.1.1.tar.gz
 "
