@@ -20,3 +20,4 @@ The following must be true for template/package changes:
 The following must be true for new package submissions:
 
 - [ ] I will take responsibility for my template and keep it up to date
+- [ ] I acknowledge that overtly not following the above or the below will result in my pull request getting closed
