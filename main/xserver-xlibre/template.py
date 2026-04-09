@@ -177,7 +177,7 @@ def _(self):
     # check if this needs to be updated when updating
     self.depends += [
         "so:libEGL.so.1!mesa-egl-libs",
-        "xserver-xorg-protocol>=20180227", # https://github.com/xlibre-alpine/xlibre-ports/issues/4
+        "xserver-xorg-protocol>=20180227",  # https://github.com/xlibre-alpine/xlibre-ports/issues/4
         "xkeyboard-config",
     ]
     self.provides = [
