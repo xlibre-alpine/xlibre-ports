@@ -593,6 +593,8 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
                     stage=pkg.stage,
                     allow_restricted=pkg._allow_restricted,
                     data=pkg._data,
+                    linter=pkg._linter,
+                    formatter=pkg._formatter,
                 ),
                 depmap,
                 chost=hostdep or cross,
