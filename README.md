@@ -109,8 +109,8 @@ sudo apk add ~/packages/$(uname -m)/xlibre-video-intel-*.apk
 ## Key Features
 
 - **Drop-in Replacement**: XLibre packages provide and replace standard X.Org packages
-- **Version 25.0**: Based on XLibre 25.0.x series
-- **Versioned Module Paths**: Drivers install to `/usr/lib/xorg/modules/xlibre-25.0/`
+- **Version 25.1**: Based on XLibre 25.1.x series
+- **Versioned Module Paths**: Drivers install to `/usr/lib/xorg/modules/xlibre-25/`
 - **Alpine Integration**: Full integration with Alpine's package management
 
 ## Build Notes
