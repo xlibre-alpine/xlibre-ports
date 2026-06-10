@@ -1,0 +1,29 @@
+From cedcb83034ff819bbf97baf55381aedcd52dfdd1 Mon Jun 8 11:14:00 2026 +0100 
+From: "Enrico Weigelt, metux IT consult" <info@metux.net>
+Date: Mon, 8 Jun 2026 10:52:49 +0200
+Subject: [PATCH] os: osdep.h: fix FTBS on musl
+
+https://github.com/X11Libre/xserver/issues/2890
+
+musl doesn't indirectly include errno.h as much as other libc's do.
+In general it's a good idea to always explicitly include what's needed,
+instead of relying on indirect includes.
+
+Signed-off-by: Enrico Weigelt, metux IT consult <info@metux.net>
+---
+ os/osdep.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/os/osdep.h b/os/osdep.h
+index a430555a8a..443dd477e1 100644
+--- a/os/osdep.h
++++ b/os/osdep.h
+@@ -50,6 +50,7 @@ SOFTWARE.
+ 
+ #include <X11/Xdefs.h>
+ 
++#include <errno.h>
+ #include <limits.h>
+ #include <signal.h>
+ #include <stddef.h>
+

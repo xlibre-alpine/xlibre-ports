@@ -137,7 +137,6 @@ Some modern packages (libinput, wacom, xlibre-xserver) use Meson build system.
 - **x86/x86_64**: Legacy/vintage hardware drivers (ark, apm, i740, etc.)
 - **x86_64**: Modern Intel/AMD drivers
 - **armv7**: ARM-specific drivers (omap)
-- **arm64**: Selected ARM64 drivers for VMWare Fusion on Apple Silicon (vmmouse, vmware)
 
 ## License
 
@@ -154,7 +153,7 @@ When adding new packages:
 
 ## TODO
 
-- [ ] Build and package Xlibre once a new version is released via GitHub Actions
+- [ ] Build and package Xlibre once a new version is released via GitHub Actions (work is in progress)
 - [x] Add support for Chimera Linux
 
 ## Related Links

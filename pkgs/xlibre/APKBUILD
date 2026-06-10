@@ -1,9 +1,24 @@
 # Contributor: Łukasz Jendrysik <scadu@yandex.com>
 maintainer="matik <wierzejskimateusz8@gmail.com>"
-pkgname=xlibre-xserver
-pkgver="25.1.5"
+pmosbuild="${pmosbuild:-false}"
+case "$pmosbuild" in
+        true)
+            pkgname="xlibre-xserver-pmos"
+            ;;
+        *)
+            pkgname="xlibre-xserver"
+            ;;
+esac
+pkgver="25.1.6"
 pkgrel=0
-pkgdesc="XLibre X servers"
+case "$pmosbuild" in
+        true)
+            pkgdesc="XLibre X servers (postmarketOS variant)"
+            ;;
+        *)
+            pkgdesc="XLibre X servers"
+            ;;
+esac
 url="https://github.com/X11Libre/xserver"
 arch="all"
 license="MIT"
@@ -26,18 +41,13 @@ depends="
 	xlibre-xserver-common
 	"
 
-# current ARM64 builder (postmarketOS phone) conflicts installing libseatd-dev due to systemd-dev
-# so for the mean time allow configuring if seatd should be enabled or not 
-# to disable building seatd support, export shell envrionment variable withseatd to false
-# by default this will be set to true, but public ARM64 xlibre builds will have this set to false
-withseatd="${withseatd:-true}"
-
-case "$withseatd" in
+# postmarketOS variant uses systemd-logind instead of seatd for rootless X server launches which requires udevd and dbus
+case "$pmosbuild" in
 	true)
-	    depends="$depends seatd cmd:seatd-launch"
+	    depends="$depends systemd-udevd"
 	    ;;
 	*)
-	    depends="$depends"
+	    depends="$depends seatd"
 	    ;;
 esac
 
@@ -62,8 +72,6 @@ makedepends="
 	meson
 	nettle-dev
 	pixman-dev
-	wayland-dev
-	wayland-protocols
 	xcb-util-dev
 	xcb-util-image-dev
 	xcb-util-keysyms-dev
@@ -73,12 +81,12 @@ makedepends="
 	xorgproto
 	xtrans
 	"
-case "$withseatd" in
+case "$pmosbuild" in
         true)
-            makedepends="$depends libseat-dev"
+            makedepends="$depends dbus-dev systemd-dev"
             ;;
         *)
-            makedepends="$depends"
+            makedepends="$depends libseat-dev"
             ;;
 esac
 
@@ -87,14 +95,42 @@ checkdepends="
 	xrandr
 	xvinfo
 	"
-source="https://github.com/X11Libre/xserver/archive/refs/tags/$pkgname-$pkgver.tar.gz"
-builddir=xserver-xlibre-xserver-$pkgver
+source="
+    https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-$pkgver.tar.gz
+	fix-errno.patch
+"
+builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 
 # the modesetting driver is now shipped with xserver
 provides="xf86-video-modesetting=$pkgver-r$pkgrel"
-replaces="xorg-server xf86-video-modesetting"
+# postmarketOS variant conflicts with the non postmarketOS variant
+case "$pmosbuild" in
+        true)
+            replaces="xorg-server xf86-video-modesetting xlibre-xserver"
+            ;;
+        *)
+            replaces="xorg-server xf86-video-modesetting xlibre-xserver-pmos"
+            ;;
+esac
 
 # secfixes:
+#   21.1.22-r0:
+#     - CVE-2026-33999
+#     - CVE-2026-34000
+#     - CVE-2026-34001
+#     - CVE-2026-34002
+#     - CVE-2026-34003
+#   21.1.19-r0:
+#     - CVE-2025-62229
+#     - CVE-2025-62230
+#     - CVE-2025-62231
+#   21.1.17-r0:
+#     - CVE-2025-49175
+#     - CVE-2025-49176
+#     - CVE-2025-49177
+#     - CVE-2025-49178
+#     - CVE-2025-49179
+#     - CVE-2025-49180
 #   21.1.16-r0:
 #     - CVE-2025-26594
 #     - CVE-2025-26595
@@ -174,7 +210,6 @@ replaces="xorg-server xf86-video-modesetting"
 
 prepare() {
 	default_prepare
-	cd src/$builddir || return
 	sed -i -e 's/termio.h/termios.h/' hw/xfree86/os-support/xf86_OSlib.h
 }
 
@@ -190,12 +225,12 @@ build() {
 	# 32-bit fails otherwise
 	export CFLAGS="$CFLAGS -Wno-error=array-bounds"
 	
-	case "$withseatd" in
+	case "$pmosbuild" in
 	        true)
-	            seatdargs="-Dseatd_libseat=true"
+	            seatdargs="-Dsystemd_logind=true -Dseatd_libseat=false"
 	            ;;
 	        *)
-	            seatdargs="-Dseatd_libseat=false"
+	            seatdargs="-Dseatd_libseat=true -Dsystemd_logind=false"
 	            ;;
 	esac
 
@@ -222,7 +257,6 @@ build() {
 		-Dpciaccess=true \
 		-Dudev=true \
 		-Dhal=false \
-		-Dsystemd_logind=false \
 		-Ddpms=true \
 		-Ddri1=false \
 		-Ddri2=true \
@@ -257,7 +291,6 @@ check() {
 }
 
 package() {
-	cd src/$builddir
 	DESTDIR="$pkgdir" meson install --no-rebuild -C output
 
 	chmod u+s "$pkgdir"/usr/libexec/Xorg.wrap
@@ -294,5 +327,6 @@ common() {
 }
 
 sha512sums="
-42770cdb45769ded2094fd578b0354e75d49e227a89006d0c69196ccd012393978dd899b2ab24074b8f3bf6ce613ed88f1c757f627dc92ab59cd6a82ed314a98  xlibre-xserver-25.1.5.tar.gz
+c55ab9360cbad9cbb2bfcd856553963b6c0e2af1fa6c00a38c551b50078afd640f456419d9cc13b09a2ae3e07351d761a872ae52c3ff73cc504efaa55db19859  xlibre-xserver-25.1.6.tar.gz
+6a23469902545b3cd3bd3b4ce30d9fc700a1d6d6041518dd88880a18610dd36b779fcb8c3557c57c613179eb404f5d6854ecd90d8973937d4b8ab028c8f6a2e0  fix-errno.patch
 "

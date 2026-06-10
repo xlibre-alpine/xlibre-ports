@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-intel
-pkgver="25.0.1"
+pkgver="25.0.2"
 pkgrel=1
 pkgdesc="Xlibre driver for Intel video cards"
 url="https://github.com/X11Libre/xf86-video-intel"
