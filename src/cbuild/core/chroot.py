@@ -16,7 +16,7 @@ from cbuild.util import flock
 _chroot_checked = False
 _chroot_ready = False
 _extra_pkgs = []
-_apk_static_base = "https://repo.chimera-linux.org/apk/3.0.0_rc4-r2"
+_apk_static_base = "https://repo.chimera-linux.org/apk/3.0.5-r0"
 
 
 def host_cpu():
