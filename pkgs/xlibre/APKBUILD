@@ -38,7 +38,7 @@ depends="
 	mesa-egl
 	xkbcomp
 	xkeyboard-config
-	xlibre-xserver-common
+	$pkgname-common
 	"
 
 # postmarketOS variant uses systemd-logind instead of seatd for rootless X server launches which requires udevd and dbus
@@ -83,10 +83,10 @@ makedepends="
 	"
 case "$pmosbuild" in
         true)
-            makedepends="$depends dbus-dev systemd-dev"
+            makedepends="$makedepends dbus-dev systemd-dev"
             ;;
         *)
-            makedepends="$depends libseat-dev"
+            makedepends="$makedepends libseat-dev"
             ;;
 esac
 
@@ -102,7 +102,14 @@ source="
 builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 
 # the modesetting driver is now shipped with xserver
-provides="xf86-video-modesetting=$pkgver-r$pkgrel"
+case "$pmosbuild" in
+        true)
+            provides="xf86-video-modesetting=$pkgver-r$pkgrel xlibre-xserver=$pkgver"
+            ;;
+        *)
+            provides="xf86-video-modesetting=$pkgver-r$pkgrel"
+            ;;
+esac
 # postmarketOS variant conflicts with the non postmarketOS variant
 case "$pmosbuild" in
         true)
@@ -322,6 +329,14 @@ xnest() {
 common() {
 	depends=""
 	pkgdesc="Xlibre server common files"
+	case "$pmosbuild" in
+		true)
+			replaces="xorg-server-common xlibre-xserver-common"
+			;;
+		*)
+			replaces="xorg-server-common"
+			;;
+	esac
 
 	amove usr/lib/xorg/protocol.txt
 }
