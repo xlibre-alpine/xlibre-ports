@@ -1,0 +1,32 @@
+From: b-aaz <85005689+b-aaz@users.noreply.github.com>
+Date: Mon, 8 Jun 2026 16:03:26 +0000
+Subject: [PATCH] Adds #mesondefine for conf variable added in a86be24e.
+
+This configuration variable was getting defined in `include/meson.build`
+but it didn't have a #mesondefine "anchor" in
+`hw/xfree86/xlibre-server.h.meson.in`, so it did not end up in the
+configuration headers, and lead to broken builds (due
+to a double define of `pci_device_is_boot_display`) with libpciaccess
+version 19.
+
+Added the appropriate #mesondefine line to fix it.
+
+Signed-off-by: b-aaz <b-aazbsd@proton.me>
+---
+ hw/xfree86/xlibre-server.h.meson.in | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/xfree86/xlibre-server.h.meson.in b/hw/xfree86/xlibre-server.h.meson.in
+index 4f14eee1cf..6c5e3ba016 100644
+--- a/hw/xfree86/xlibre-server.h.meson.in
++++ b/hw/xfree86/xlibre-server.h.meson.in
+@@ -178,6 +178,9 @@
+ /* Use libpciaccess */
+ #mesondefine XSERVER_LIBPCIACCESS
+ 
++/* Have the pci_device_is_boot_display function */
++#mesondefine HAVE_PCI_DEVICE_IS_BOOT_DISPLAY
++
+ /* X Access Control Extension */
+ #mesondefine XACE
+ 

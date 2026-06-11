@@ -98,13 +98,14 @@ checkdepends="
 source="
     https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-$pkgver.tar.gz
 	fix-errno.patch
+	fix-mesondefine.patch
 "
 builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 
 # the modesetting driver is now shipped with xserver
 case "$pmosbuild" in
         true)
-            provides="xf86-video-modesetting=$pkgver-r$pkgrel xlibre-xserver=$pkgver"
+            provides="xf86-video-modesetting=$pkgver-r$pkgrel xlibre-xserver=$pkgver xlibre-xserver-dbg=$pkgver xlibre-xserver-doc=$pkgver xlibre-xserver-dev=$pkgver"
             ;;
         *)
             provides="xf86-video-modesetting=$pkgver-r$pkgrel"
@@ -344,4 +345,5 @@ common() {
 sha512sums="
 c55ab9360cbad9cbb2bfcd856553963b6c0e2af1fa6c00a38c551b50078afd640f456419d9cc13b09a2ae3e07351d761a872ae52c3ff73cc504efaa55db19859  xlibre-xserver-25.1.6.tar.gz
 6a23469902545b3cd3bd3b4ce30d9fc700a1d6d6041518dd88880a18610dd36b779fcb8c3557c57c613179eb404f5d6854ecd90d8973937d4b8ab028c8f6a2e0  fix-errno.patch
+d6734677c85ef3bd704797c153e8ff4b50e8655fe0c158464b8d6888686e820c190d1af7b132e733c0c430763d23a9ccb0576061f2084b685e2fb415bc0c1110  fix-mesondefine.patch
 "

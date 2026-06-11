@@ -75,5 +75,5 @@ package() {
 
 
 sha512sums="
-08abbe7ba712ba3eced7a15ca2e06a65be911e8128ff565f486f1bf8d6f8bcbdf3c8b9422d9dc29a3f96f2ca61cbbcc92fbee2bf7d496d486b12dbe84dc7fdef  xlibre-xf86-video-intel-25.0.1.tar.gz
+29734c62c8a2cf6bf4083e7b92c20030966ed2b136894852bd18bb2339578e34d48f6e1ae9342ee3194f60af183659016c0f143f85510cfac6ae04ca931083f3  xlibre-xf86-video-intel-25.0.2.tar.gz
 "
