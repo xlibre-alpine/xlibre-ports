@@ -105,10 +105,10 @@ builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 # the modesetting driver is now shipped with xserver
 case "$pmosbuild" in
         true)
-            provides="xf86-video-modesetting=$pkgver-r$pkgrel xlibre-xserver=$pkgver xlibre-xserver-dbg=$pkgver xlibre-xserver-doc=$pkgver xlibre-xserver-dev=$pkgver"
+            provides="xf86-video-modesetting=$pkgver-r$pkgrel xorg-server=$pkgver-r$pkgrel xlibre-xserver=$pkgver"
             ;;
         *)
-            provides="xf86-video-modesetting=$pkgver-r$pkgrel"
+            provides="xf86-video-modesetting=$pkgver-r$pkgrel xorg-server=$pkgver-r$pkgrel"
             ;;
 esac
 # postmarketOS variant conflicts with the non postmarketOS variant
@@ -333,13 +333,30 @@ common() {
 	case "$pmosbuild" in
 		true)
 			replaces="xorg-server-common xlibre-xserver-common"
+			provides="xorg-server-common=$pkgver-r$pkgrel xlibre-xserver-common=$pkgver"
 			;;
 		*)
 			replaces="xorg-server-common"
+			provides="xorg-server-common=$pkgver-r$pkgrel"
 			;;
 	esac
 
 	amove usr/lib/xorg/protocol.txt
+}
+
+dev() {
+	case "$pmosbuild" in
+		true)
+			provides="xorg-server-dev=$pkgver-r$pkgrel xlibre-xserver-dev=$pkgver"
+			replaces="xorg-server-dev xlibre-xserver-dev"
+			;;
+		*)
+			provides="xorg-server-dev=$pkgver-r$pkgrel"
+			replaces="xorg-server-dev"
+			;;
+	esac
+
+	default_dev
 }
 
 sha512sums="
