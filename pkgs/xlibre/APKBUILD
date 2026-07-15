@@ -9,7 +9,7 @@ case "$pmosbuild" in
             pkgname="xlibre-xserver"
             ;;
 esac
-pkgver="25.1.6"
+pkgver="25.2.1"
 pkgrel=0
 case "$pmosbuild" in
         true)
@@ -54,7 +54,6 @@ esac
 depends_dev="
 	libepoxy-dev
 	libpciaccess-dev
-	libxfont2-dev
 	mesa-dev
 	"
 makedepends="
@@ -67,6 +66,7 @@ makedepends="
 	libxcvt-dev
 	libxdmcp-dev
 	libxext-dev
+	libxfont2-dev
 	libxkbfile-dev
 	libxshmfence-dev
 	meson
@@ -79,7 +79,6 @@ makedepends="
 	xcb-util-wm-dev
 	xkbcomp-dev
 	xorgproto
-	xtrans
 	"
 case "$pmosbuild" in
         true)
@@ -97,8 +96,7 @@ checkdepends="
 	"
 source="
     https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-$pkgver.tar.gz
-	fix-errno.patch
-	fix-mesondefine.patch
+       fix-getrandom.patch
 "
 builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 
@@ -218,7 +216,7 @@ esac
 
 prepare() {
 	default_prepare
-	sed -i -e 's/termio.h/termios.h/' hw/xfree86/os-support/xf86_OSlib.h
+	sed -i -e 's/termio.h/termios.h/' include/xf86_OSlib.h
 }
 
 build() {
@@ -306,7 +304,7 @@ package() {
 	# Don't conflict with xf86-input-evdev
 	rm -f "$pkgdir"/usr/share/X11/xorg.conf.d/10-evdev.conf
 
-	install -Dm0644 xkb/README.compiled -t "$pkgdir"/var/lib/xkb
+	install -Dm0644 Xext/xkeyboard/README.compiled -t "$pkgdir"/var/lib/xkb
 }
 
 xvfb() {
@@ -343,7 +341,6 @@ common() {
 }
 
 sha512sums="
-c55ab9360cbad9cbb2bfcd856553963b6c0e2af1fa6c00a38c551b50078afd640f456419d9cc13b09a2ae3e07351d761a872ae52c3ff73cc504efaa55db19859  xlibre-xserver-25.1.6.tar.gz
-6a23469902545b3cd3bd3b4ce30d9fc700a1d6d6041518dd88880a18610dd36b779fcb8c3557c57c613179eb404f5d6854ecd90d8973937d4b8ab028c8f6a2e0  fix-errno.patch
-d6734677c85ef3bd704797c153e8ff4b50e8655fe0c158464b8d6888686e820c190d1af7b132e733c0c430763d23a9ccb0576061f2084b685e2fb415bc0c1110  fix-mesondefine.patch
+34a6d6b0ee83ac26390666c7891be51a57da507685f17f26c6d3c845089b01626ca10767dc08ee4ed72817667c873809e8d21a9b7cd0b042c28a95a2fb571246  xlibre-xserver-25.2.1.tar.gz
+89f25d136889102afdbc941acecbeb96f96fe8cd8724b11b49b439ccd506e833912042e9405afe34d677b53083f916d0d959b825d2778df6c6eb4fd814f2d72e  fix-getrandom.patch
 "
