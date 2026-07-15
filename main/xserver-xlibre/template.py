@@ -53,7 +53,6 @@ makedepends = [
     "xcb-util-wm-devel",
     "xkbcomp-devel",
     "xorgproto",
-    "xtrans",
 ]
 checkdepends = ["xkeyboard-config"]
 depends = [
