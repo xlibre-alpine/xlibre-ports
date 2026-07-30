@@ -9,7 +9,7 @@ case "$pmosbuild" in
             pkgname="xlibre-xserver"
             ;;
 esac
-pkgver="25.2.1"
+pkgver="25.2.2"
 pkgrel=0
 case "$pmosbuild" in
         true)
@@ -358,6 +358,6 @@ dev() {
 }
 
 sha512sums="
-34a6d6b0ee83ac26390666c7891be51a57da507685f17f26c6d3c845089b01626ca10767dc08ee4ed72817667c873809e8d21a9b7cd0b042c28a95a2fb571246  xlibre-xserver-25.2.1.tar.gz
+b83e6f24cdb18ae8e7ceb0a09472bf795fee007c556da09c52c575dea9035a44b1bf19969d5487e86d8ad7b3074e942e04f3e1665b03781f8ab1b813e015ba85  xlibre-xserver-25.2.2.tar.gz
 89f25d136889102afdbc941acecbeb96f96fe8cd8724b11b49b439ccd506e833912042e9405afe34d677b53083f916d0d959b825d2778df6c6eb4fd814f2d72e  fix-getrandom.patch
 "
