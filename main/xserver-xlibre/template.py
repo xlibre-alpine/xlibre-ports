@@ -1,5 +1,5 @@
 pkgname = "xserver-xlibre"
-pkgver = "25.2.1"
+pkgver = "25.2.2"
 pkgrel = 0
 build_style = "meson"
 _fontroot = "/usr/share/fonts"
@@ -96,7 +96,7 @@ pkgdesc = "Xlibre X server"
 license = "MIT AND BSD-3-Clause"
 url = "https://github.com/X11Libre/xserver"
 source = f"https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-{pkgver}.tar.gz"
-sha256 = "4a2744f83042afec874f9a355a849ed77bcfcaa36d710ab790af0f661b9269b5"
+sha256 = "3c1f07f4b5f8a483473097be4b964ee97a2b92adde9de6c0d8d9d7217a382810"
 tool_flags = {
     "CFLAGS": ["-D_GNU_SOURCE", "-D__uid_t=uid_t", "-D__gid_t=gid_t"],
     "LDFLAGS": ["-Wl,-z,lazy"],  # must be set for modules to work
