@@ -1,6 +1,6 @@
 # Maintainer: matik <wierzejskimateusz8@gmail.com>
 pkgname=xlibre-video-omap
-pkgver="25.0.0"
+pkgver="25.0.1"
 pkgrel=1
 pkgdesc="OMAP3+ framebuffer driver for Xlibre"
 url="https://github.com/X11Libre/xf86-video-omap"
@@ -40,5 +40,5 @@ package() {
 }
 
 sha512sums="
-89fbfd798c052366cbe6f85dc7fb80c346d294897ca1d88f7d7820bc18e5a76ed218e64a5ddf9d25baf55aad8a265b82ced58a05540e25fdf5a8c2dac8a4605b  xlibre-xf86-video-omap-25.0.0.tar.gz
+72b9bdd102e2e89b51efd0fbec5271ea29307a0d2fa308f51fc87434d12de7142730e57b78524bb41cd1cc3ac8cd0b68733785030d129069a8e82096028378b2  xlibre-xf86-video-omap-25.0.1.tar.gz
 "

@@ -9,7 +9,7 @@ case "$pmosbuild" in
             pkgname="xlibre-xserver"
             ;;
 esac
-pkgver="25.2.2"
+pkgver="25.2.3"
 pkgrel=0
 case "$pmosbuild" in
         true)
@@ -94,10 +94,7 @@ checkdepends="
 	xrandr
 	xvinfo
 	"
-source="
-    https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-$pkgver.tar.gz
-       fix-getrandom.patch
-"
+source="https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-$pkgver.tar.gz"
 builddir="$srcdir/xserver-xlibre-xserver-$pkgver"
 
 # the modesetting driver is now shipped with xserver
@@ -358,6 +355,5 @@ dev() {
 }
 
 sha512sums="
-b83e6f24cdb18ae8e7ceb0a09472bf795fee007c556da09c52c575dea9035a44b1bf19969d5487e86d8ad7b3074e942e04f3e1665b03781f8ab1b813e015ba85  xlibre-xserver-25.2.2.tar.gz
-89f25d136889102afdbc941acecbeb96f96fe8cd8724b11b49b439ccd506e833912042e9405afe34d677b53083f916d0d959b825d2778df6c6eb4fd814f2d72e  fix-getrandom.patch
+189e9ce44ba11154511c89a40b63378821a19d2c05aeb29b3427fbf726ce6bb2c4ae5819550bb7d12e908d60cb8187c7657677f73c091ca08f2ed33b3380e9a2  xlibre-xserver-25.2.3.tar.gz
 "
