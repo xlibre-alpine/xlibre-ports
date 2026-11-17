@@ -146,7 +146,7 @@ def extract_txt(pkg, fname, dfile, edir, sfx):
     )
 
 
-def rename_edir(extractdir, wpath):
+def rename_edir(pkg, extractdir, wpath, replace):
     it = extractdir.iterdir()
     entry = None
     sentry = None
@@ -159,6 +159,17 @@ def rename_edir(extractdir, wpath):
     # no contents
     if not entry:
         return
+    try:
+        # try removing the directory in case it's empty
+        wpath.rmdir()
+    except OSError:
+        pass
+    # if it exists and we're replacing, remove the old
+    if wpath.exists():
+        if not replace:
+            pkg.error(f"source path '{wpath}' already exists")
+        else:
+            pkg.rm(wpath, recursive=True, force=True)
     # in case wrksrc was declared to be multilevel
     wpath.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
     # if the extracted contents are a single real directory, use
@@ -190,7 +201,10 @@ def invoke(pkg):
                 if not tmpd:
                     continue
                 try:
-                    rename_edir(tmpp, wpath / sp)
+                    if sp.startswith("+"):
+                        rename_edir(pkg, tmpp, wpath / sp[1:], True)
+                    else:
+                        rename_edir(pkg, tmpp, wpath / sp, False)
                 finally:
                     tmpd.cleanup()
 
@@ -226,9 +240,9 @@ def invoke(pkg):
             else:
                 fname = d[bsl + 1 :]
             suffix = None
-            for key in suffixes:
+            for key, sfx in suffixes.items():
                 if fnmatch(fname, key):
-                    suffix = suffixes[key]
+                    suffix = sfx
                     break
             if not suffix:
                 pkg.error(f"unknown source suffix for '{fname}'")
@@ -267,7 +281,7 @@ def invoke(pkg):
                     hint="perhaps an extraction program is missing",
                 )
         # handle the tempdir
-        rename_edir(extractdir, wpath)
+        rename_edir(pkg, extractdir, wpath, False)
     # all done; re-create the wrksrc in case nothing was extracted
     if not wpath.exists():
         wpath.mkdir(parents=True)

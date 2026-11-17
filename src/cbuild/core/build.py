@@ -9,8 +9,6 @@ import os
 import pty
 import sys
 import select
-import shutil
-import stat
 import termios
 import subprocess
 
@@ -107,7 +105,6 @@ def redir_log(pkg):
             # unredir_log function, so we'll lose file logs
             # but retain actual console output (hopefully)
             os._exit(0)
-            return
     try:
         # in parent, close read end, we don't need it here
         os.close(prd)
@@ -135,7 +132,7 @@ hooks = {
 
 
 def register_hooks():
-    for stepn in hooks:
+    for stepn, harr in hooks.items():
         dirn = paths.cbuild() / "hooks" / stepn
         if dirn.is_dir():
             for f in dirn.glob("*.py"):
@@ -153,8 +150,8 @@ def register_hooks():
                     do_redir = modh.redir_log()
                 else:
                     do_redir = True
-                hooks[stepn].append((modh.invoke, f.stem, do_redir))
-            hooks[stepn].sort(key=lambda v: v[1])
+                harr.append((modh.invoke, f.stem, do_redir))
+            harr.sort(key=lambda v: v[1])
 
 
 def _restricted_importer(name, globals=None, locals=None, fromlist=(), level=0):
@@ -211,7 +208,7 @@ def call_pkg_hooks(pkg, stepn):
 def _invoke_fetch(pkg):
     run_pkg_func(pkg, "init_fetch")
 
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     fetch_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_fetch_done"
     if fetch_done.is_file():
@@ -245,7 +242,7 @@ def invoke_fetch(pkg):
 def invoke_extract(pkg):
     run_pkg_func(pkg, "init_extract")
 
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     extract_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_extract_done"
     if extract_done.is_file():
@@ -266,7 +263,7 @@ def invoke_extract(pkg):
 
 
 def invoke_prepare(pkg):
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     prepare_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_prepare_done"
 
@@ -288,7 +285,7 @@ def invoke_prepare(pkg):
 
 
 def invoke_patch(pkg):
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     patch_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_patch_done"
 
@@ -310,7 +307,7 @@ def invoke_patch(pkg):
 
 
 def invoke_configure(pkg, step):
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     cfg_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_configure_done"
 
@@ -327,7 +324,7 @@ def invoke_configure(pkg, step):
 
 
 def invoke_build(pkg, step):
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     build_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_build_done"
 
@@ -344,7 +341,7 @@ def invoke_build(pkg, step):
 
 
 def invoke_check(pkg, step, allow_fail):
-    if pkg.profile().cross:
+    if pkg.profile.cross:
         pkg.log("skipping check (cross build)")
         return
 
@@ -377,14 +374,9 @@ def invoke_check(pkg, step, allow_fail):
     check_done.touch()
 
 
-def _remove_ro(f, path, _):
-    os.chmod(path, stat.S_IWRITE)
-    f(path)
-
-
 def _invoke_subpkg(pkg):
     if pkg.destdir.is_dir():
-        shutil.rmtree(pkg.destdir, onerror=_remove_ro)
+        pkg._rmtree_safe(pkg.destdir)
     pkg.destdir.mkdir(parents=True, exist_ok=True)
     if pkg.pkg_install:
         run_pkg_func(pkg, "pkg_install", on_subpkg=True)
@@ -475,7 +467,7 @@ def _split_auto(pkg, done):
 
 
 def invoke_install(pkg, step):
-    p = pkg.profile()
+    p = pkg.profile
     crossb = p.arch if p.cross else ""
     install_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_install_done"
 
@@ -498,7 +490,7 @@ def invoke_install(pkg, step):
         return
 
     if pkg.destdir.is_dir():
-        shutil.rmtree(pkg.destdir, onerror=_remove_ro)
+        pkg._rmtree_safe(pkg.destdir)
     pkg.destdir.mkdir(parents=True, exist_ok=True)
 
     run_pkg_func(pkg, "pre_install")
@@ -525,7 +517,7 @@ def invoke_install(pkg, step):
 
 
 def _invoke_prepkg(pkg):
-    p = pkg.rparent.profile()
+    p = pkg.rparent.profile
     crossb = p.arch if p.cross else ""
     prepkg_done = pkg.statedir / f"{pkg.pkgname}_{crossb}_prepkg_done"
 
@@ -625,12 +617,16 @@ def _build(
     # in there) but not any other stage
     if not dirty and pkg.stage > 0:
         # clean up old state
-        pkgm.remove_pkg_wrksrc(pkg)
-        pkgm.remove_pkg(pkg)
-        pkgm.remove_pkg_statedir(pkg)
+        with flock.lock(flock.rootlock()):
+            pkgm.remove_pkg_wrksrc(pkg)
+            pkgm.remove_pkg(pkg)
+            pkgm.remove_pkg_statedir(pkg)
 
     pkg.statedir.mkdir(parents=True, exist_ok=True)
     pkg.wrapperdir.mkdir(parents=True, exist_ok=True)
+
+    with open(pkg.statedir / "ccache.conf", "w") as mf:
+        mf.write(f"base_dir = {pkg.chroot_srcdir}\n")
 
     pkg.setup_reproducible()
 
@@ -642,7 +638,7 @@ def _build(
 
     pkg._maintainer = maintainer
 
-    prof = pkg.profile()
+    prof = pkg.profile
     hard = profile.get_hardening(prof, pkg)
     hpos = []
     hneg = []
@@ -853,7 +849,8 @@ def _build_locked(
                     "0",
                     "--",
                     *mkcmd,
-                ]
+                ],
+                check=False,
             )
         else:
             # better, still cannot use pkg.do :(
@@ -881,7 +878,7 @@ def _build_locked(
     # cleanup
     pkg.current_phase = "cleanup"
     if not keep_temp:
-        chroot.cleanup_world(pkg.stage == 0, pkg.profile(), False)
+        chroot.cleanup_world(pkg.stage == 0, pkg.profile, False)
         pkgm.remove_pkg_wrksrc(pkg)
         pkgm.remove_pkg(pkg)
         pkgm.remove_pkg_statedir(pkg)

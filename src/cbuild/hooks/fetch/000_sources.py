@@ -8,13 +8,21 @@ import pathlib
 import threading
 from time import time as timer
 from urllib import request
+from urllib.error import HTTPError
 from http.client import responses
 from multiprocessing.pool import ThreadPool
+
+_empty_sha256 = (
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+)
 
 
 def get_cksum(dfile, pkg):
     with dfile.open("rb") as fn:
-        return hashlib.file_digest(fn, "sha256").hexdigest()
+        dig = hashlib.file_digest(fn, "sha256").hexdigest()
+        if dig == _empty_sha256:
+            return None
+        return dig
 
 
 def make_link(dfile, cksum):
@@ -32,16 +40,20 @@ def make_link(dfile, cksum):
             linkpath.hardlink_to(dfile)
 
 
-def verify_cksum(dfile, cksum, pkg):
+def verify_cksum(dfile, sidx, pkg):
+    cksum = pkg.sha256[sidx]
     pkg.log(f"verifying sha256sums for source '{dfile.name}'... ", "")
     filesum = get_cksum(dfile, pkg)
-    if cksum != filesum:
+    if not filesum:
+        pkg.logger.out_plain("")
+        pkg.logger.out(f"\f[red]empty source file '{dfile.name}':\n{filesum}")
+        return False
+    elif cksum != filesum:
         if pkg.accept_checksums:
             pkg.logger.out_plain("")
             pkg.logger.out(f"\f[orange]SHA256 UPDATED: {cksum} -> {filesum}")
             for i in range(len(pkg.sha256)):
-                if pkg.sha256[i] == cksum:
-                    pkg.sha256[i] = filesum
+                pkg.sha256[sidx] = filesum
             return True
         else:
             pkg.logger.out_plain("")
@@ -55,7 +67,8 @@ def verify_cksum(dfile, cksum, pkg):
         return True
 
 
-def link_cksum(dfile, cksum, pkg):
+def link_cksum(dfile, sidx, pkg):
+    cksum = pkg.sha256[sidx]
     # it's already in the destination, don't try to link
     if dfile.is_file():
         return True
@@ -65,7 +78,7 @@ def link_cksum(dfile, cksum, pkg):
         dfile.hardlink_to(linkpath)
         pkg.log(f"using known source '{dfile.name}'")
         # do an early verify in case the known source is corrupt
-        if not verify_cksum(dfile, cksum, pkg):
+        if not verify_cksum(dfile, sidx, pkg):
             pkg.log_warn(f"corrupt by_sha256 entry '{dfile.name}' - removing")
             linkpath.unlink()
             dfile.unlink()
@@ -77,8 +90,7 @@ def link_cksum(dfile, cksum, pkg):
 
 
 def get_nameurl(pkg, d):
-    if d.startswith("!"):
-        d = d[1:]
+    d = d.removeprefix("!")
     bkt = d.rfind(">")
     bsl = d.rfind("/")
     if bkt < 0 and bsl < 0:
@@ -175,12 +187,14 @@ def fetch_url(url, dfile, dhdrs, ehdrs, idx, ntry, rbuf=None):
         if ehdrs:
             hdrs.update(ehdrs)
         # delete none values in case we have them
-        for k in hdrs:
-            if hdrs[k] is None:
+        for k, hdr in hdrs.items():
+            if hdr is None:
                 del hdrs[k]
         if ntry > 0:
             with fmtx:
-                hdrs["Range"] = f"bytes={fstatus[idx]}-{flens[idx]}"
+                # if we fetched a part of the stream, add it to the range
+                if flens[idx] > 0:
+                    hdrs["Range"] = f"bytes={fstatus[idx]}-{flens[idx]}"
         rq = request.Request(
             url,
             data=None,
@@ -188,10 +202,15 @@ def fetch_url(url, dfile, dhdrs, ehdrs, idx, ntry, rbuf=None):
         )
         with request.urlopen(rq, context=fctx) as rqf:
             return fetch_stream(url, dfile, dhdrs, ehdrs, idx, ntry, rqf, rbuf)
+    except HTTPError as e:
+        # don't retry for 4xx status codes, it will just fail again
+        if ntry > 3 or (e.code >= 400 and e.code < 500):
+            return url, dfile, str(e)
+        # try a few times on failures
+        return fetch_url(url, dfile, dhdrs, ehdrs, idx, ntry + 1, rbuf)
     except Exception as e:
         if ntry > 3:
             return url, dfile, str(e)
-        # try a few times on failures
         return fetch_url(url, dfile, dhdrs, ehdrs, idx, ntry + 1, rbuf)
 
 
@@ -260,7 +279,7 @@ def invoke(pkg):
         dfile = srcdir / fname
         if dfile.is_file():
             filesum = get_cksum(dfile, pkg)
-            if ck == filesum:
+            if filesum and ck == filesum:
                 make_link(dfile, filesum)
                 dfgood += 1
             else:
@@ -276,17 +295,17 @@ def invoke(pkg):
     fstatus = []
     flens = []
 
-    for dc in zip(pkg.source, shdrs, pkg.sha256):
-        d, hdrs, ck = dc
+    for dc in zip(range(len(pkg.source)), pkg.source, shdrs):
+        sidx, d, hdrs = dc
         url, fname = get_nameurl(pkg, d)
         dfile = srcdir / fname
-        if not link_cksum(dfile, ck, pkg):
+        if not link_cksum(dfile, sidx, pkg):
             idx = len(tofetch)
             tofetch.append((url, dfile, hdrs, idx))
             fstatus.append(0)
             flens.append(-1)
             pkg.log(f"fetching source '{fname}'...")
-            dfiles.append((dfile, ck))
+            dfiles.append((dfile, sidx))
 
     def do_fetch_url(mv):
         url, dfile, hdrs, idx = mv
@@ -354,10 +373,10 @@ def invoke(pkg):
     if ferrs > 0:
         pkg.error(f"failed to fetch {ferrs} sources")
     # verify the sources
-    for dfile, ck in dfiles:
+    for dfile, sidx in dfiles:
         if not dfile.is_file():
             pkg.error(f"source '{dfile}' does not exist")
-        if not verify_cksum(dfile, ck, pkg):
+        if not verify_cksum(dfile, sidx, pkg):
             errors += 1
     # error if something failed to verify
     if errors > 0:

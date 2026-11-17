@@ -2,39 +2,62 @@ from pathlib import Path
 
 
 def get_go_env(pkg):
-    if not pkg.profile().goarch:
+    if not pkg.profile.goarch:
         pkg.error("unknown architecture for golang")
 
     env = {
         "GOMODCACHE": "/cbuild_cache/golang/pkg/mod",
-        "GOARCH": pkg.profile().goarch,
+        "GOARCH": pkg.profile.goarch,
         "CGO_CFLAGS": pkg.get_cflags(shell=True),
         "CGO_CXXFLAGS": pkg.get_cxxflags(shell=True),
         "CGO_LDFLAGS": pkg.get_ldflags(shell=True),
     }
-    if env["GOARCH"] == "arm":
-        if not pkg.profile().goarm:
-            pkg.error("GOARCH is arm without matching GOARM")
-        env["GOARM"] = pkg.profile().goarm
+
+    match env["GOARCH"]:
+        case "arm":
+            if not pkg.profile.goarm:
+                pkg.error("GOARCH is arm without matching GOARM")
+            env["GOARM"] = pkg.profile.goarm
+        case "ppc64le" | "ppc64":
+            # check if we have x/sys v0.49.0
+            outv = pkg.do(
+                "go",
+                "list",
+                "-m",
+                "golang.org/x/sys",
+                capture_output=True,
+                check=False,
+                env=env,
+            )
+            if outv.returncode == 0:
+                ver = outv.stdout.strip().split()
+                if (
+                    len(ver) == 2
+                    and ver[1] == b"v0.49.0"
+                    and pkg.has_hardening("pie")
+                ):
+                    pkg.error(
+                        "found golang.org/x/sys v0.49.0, can't use PIE: https://github.com/golang/go/issues/82324"
+                    )
 
     return env
 
 
 class Golang:
-    def __init__(self, tmpl, jobs=None, env={}, wrksrc=None):
+    def __init__(self, tmpl, jobs=None, env=None, wrksrc=None):
         self.template = tmpl
         self.wrksrc = wrksrc
-        self.env = env
+        self.env = env or {}
         self.jobs = jobs
 
     def _invoke(
         self,
         command=None,
-        args=[],
+        args=None,
         jobs=None,
         offline=True,
-        base_env={},
-        env={},
+        base_env=None,
+        env=None,
         wrksrc=None,
     ):
         if not command:
@@ -53,7 +76,8 @@ class Golang:
             renv.update(base_env)
 
         renv.update(self.env)
-        renv.update(env)
+        if env:
+            renv.update(env)
 
         if not jobs:
             jobs = self.jobs
@@ -61,21 +85,21 @@ class Golang:
             jobs = self.template.make_jobs
 
         if command != "mod":
-            args = ["-p", str(jobs), *args]
+            args = ["-p", str(jobs), *(args or [])]
 
-        self.template.log(f"golang: go {command} {' '.join(args)}")
+        self.template.log(f"golang: go {command} {' '.join(args or [])}")
 
         return self.template.do(
             "go",
             command,
             *self.template.configure_args,
-            *args,
+            *(args or []),
             env=renv,
             wrksrc=wrksrc,
             allow_network=not offline,
         )
 
-    def mod_download(self, args=[], env={}, wrksrc=None):
+    def mod_download(self, args=None, env=None, wrksrc=None):
         mode = self.template.go_mod_dl
 
         if mode == "off":
@@ -92,7 +116,7 @@ class Golang:
 
         return self._invoke("mod", ["download"], 1, False, None, env, wrksrc)
 
-    def build(self, args=[], jobs=None, env={}, wrksrc=None):
+    def build(self, args=None, jobs=None, env=None, wrksrc=None):
         myargs = ["-v", "-trimpath"]  # increase go verbosity, fix repro builds
 
         tags = self.template.go_build_tags
@@ -106,7 +130,8 @@ class Golang:
         if self.template.make_build_args:
             myargs += self.template.make_build_args
 
-        myargs += args
+        if args:
+            myargs += args
 
         return self._invoke("build", myargs, jobs, True, None, env, wrksrc)
 

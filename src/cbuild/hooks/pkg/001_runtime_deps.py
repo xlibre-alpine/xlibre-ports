@@ -127,7 +127,7 @@ def _scan_so(pkg):
                 subpkg_deps[depn] = True
             continue
         # otherwise, check if it came from an installed dependency
-        bp = pkg.rparent.profile()
+        bp = pkg.rparent.profile
         if bp.cross:
             broot = paths.bldroot() / bp.sysroot.relative_to("/")
             aarch = bp.arch
@@ -135,54 +135,30 @@ def _scan_so(pkg):
             broot = None
             aarch = None
 
-        info = cli.call(
-            "info",
-            ["--from", "installed", "--description", "so:" + dep],
+        info = cli.query(
+            ["name"],
+            ["--installed", "--match=provides", f"so:{dep}"],
             None,
             root=broot,
-            capture_output=True,
             arch=aarch,
-            allow_untrusted=True,
         )
-        if info.returncode != 0:
-            # when bootstrapping, also check the repository
-            if pkg.stage == 0:
-                info = cli.call(
-                    "info",
-                    ["--from", "none", "--description", "so:" + dep],
-                    "main",
-                    capture_output=True,
-                    allow_untrusted=True,
-                )
+        if not info and pkg.stage == 0:
+            # when bootstrapping, check the repository...
+            info = cli.query(
+                ["name"],
+                ["--from=none", "--match=provides", f"so:{dep}"],
+                "main",
+            )
 
-        # either of the commands failed
-        if info.returncode != 0:
+        # failed to query either way...
+        if not info:
             log.out(f"  \f[red]SONAME: {dep} (unknown provider)")
             broken = True
             continue
 
-        # this needs a bit more parsing, first take only the name-ver
-        outl = info.stdout.split()
-        sdep = None
-        if len(outl) > 0:
-            outl = outl[0].strip().decode()
-            # find -rX
-            dash = outl.rfind("-")
-            if dash > 0:
-                # find the version separator
-                dash = outl.rfind("-", 0, dash)
-                if dash > 0:
-                    # consider just the name
-                    sdep = outl[0:dash]
-
-        if not sdep or len(sdep) == 0:
-            # this should never happen though
-            log.out(f"  \f[red]SONAME: {dep} (unknown provider)")
-            broken = True
-            continue
         # we found a package
         log.out_plain(
-            f"  \f[cyan]SONAME: \f[orange]{dep}\f[] (provider: \f[green]{sdep}\f[])"
+            f"  \f[cyan]SONAME: \f[orange]{dep}\f[] (provider: \f[green]{info[0]['name']}\f[])"
         )
         pkg.so_requires.append(dep)
 
@@ -221,8 +197,8 @@ def _scan_pc(pkg):
     # all subpackages must declare their pkg-config path for the scan
     pcpaths = []
 
-    if pkg.rparent.profile().cross:
-        sr = pkg.rparent.profile().sysroot
+    if pkg.rparent.profile.cross:
+        sr = pkg.rparent.profile.sysroot
         hsr = paths.bldroot() / sr.relative_to("/")
         if (hsr / "usr/lib/pkgconfig").is_dir():
             pcpaths.append(str(sr / "usr/lib/pkgconfig"))
@@ -245,10 +221,10 @@ def _scan_pc(pkg):
     penv = {
         "PKG_CONFIG_PATH": pcpaths,
     }
-    if pkg.rparent.profile().cross:
-        penv["PKG_CONFIG_SYSROOT_DIR"] = str(pkg.rparent.profile().sysroot)
+    if pkg.rparent.profile.cross:
+        penv["PKG_CONFIG_SYSROOT_DIR"] = str(pkg.rparent.profile.sysroot)
         penv["PKG_CONFIG_LIBDIR"] = str(
-            pkg.rparent.profile().sysroot / "usr/lib/pkgconfig"
+            pkg.rparent.profile.sysroot / "usr/lib/pkgconfig"
         )
 
     def scan_pc(v):
@@ -286,7 +262,7 @@ def _scan_pc(pkg):
                 # validate so we don't fail at apk creation stage
                 if ln[idx.start() : idx.end()] not in _pc_ops:
                     pkg.error(f"invalid operator in constraint '{ln}'")
-                if not cli.check_version(ln[idx.end() :]):
+                if not autil.version_validate(ln[idx.end() :]):
                     pkg.error(f"invalid version in constraint '{ln}'")
             else:
                 pname = ln
@@ -314,29 +290,16 @@ def _scan_pc(pkg):
                 return sp.pkgname
         return None
 
-    for k in pcreq:
-        pn = pcreq[k]
+    for k, pn in pcreq.items():
         # provided by one of ours or by a dependency
-        in_subpkg = subpkg_provides_pc(pn)
-        if in_subpkg or cli.is_installed("pc:" + k, pkg):
+        prov = subpkg_provides_pc(pn)
+        if not prov:
+            prov = cli.get_provider(f"pc:{pn}", pkg)
+        if prov:
             pkg.pc_requires.append(k)
-            # locate the explicit provider
-            if not in_subpkg:
-                # apk search needs unconstrained name
-                idx = re.search(r"[<>=]", k)
-                if idx:
-                    prov = cli.get_provider("pc:" + k[: idx.start()], pkg)
-                else:
-                    prov = cli.get_provider("pc:" + k, pkg)
-            else:
-                prov = in_subpkg
-            # this should never happen in practice since it's already checked
-            if not prov:
-                pkg.error(f"  pc: {k} (unknown provider)")
-            else:
-                log.out_plain(
-                    f"  \f[cyan]pc: \f[orange]{k}\f[] (provider: \f[green]{prov}\f[])"
-                )
+            log.out_plain(
+                f"  \f[cyan]pc: \f[orange]{k}\f[] (provider: \f[green]{prov}\f[])"
+            )
             # warn about redundancy
             if prov in pkg.depends:
                 pkg.log_warn(f"redundant runtime dependency '{prov}'")
@@ -387,12 +350,10 @@ def _scan_svc(pkg):
         pth = pkg.destdir / "usr/lib/dinit.d"
         if pfx == "usvc":
             pth = pth / "user"
-        if (pth / pn).exists():
-            return True
-        return False
+        return (pth / pn).exists()
 
     def subpkg_provides_svc(pn, pfx):
-        for sp in pkg.rparent.subpkg_list:
+        for sp in pkg.rparent.subpkg_all:
             if pkg_provides_svc(sp, pn, pfx):
                 return sp.pkgname
         return None
@@ -405,26 +366,19 @@ def _scan_svc(pkg):
     for f in pkg.destdir.glob("usr/lib/dinit.d/user/*"):
         scan_svc(f, "usvc")
 
-    for sv in svcreq:
-        pfx = svcreq[sv]
+    for sv, pfx in svcreq.items():
         # provided by self
         if pkg_provides_svc(pkg, sv, pfx):
             continue
         # provided by one of ours or by a dependency
-        in_subpkg = subpkg_provides_svc(sv, pfx)
-        if in_subpkg or cli.is_installed(f"{pfx}:" + sv, pkg):
+        prov = subpkg_provides_svc(sv, pfx)
+        if not prov:
+            prov = cli.get_provider(f"{pfx}:{sv}", pkg)
+        if prov:
             pkg.svc_requires.append(f"{pfx}:{sv}")
-            # locate the explicit provider
-            if not in_subpkg:
-                prov = cli.get_provider(f"{pfx}:{sv}", pkg)
-            else:
-                prov = in_subpkg
-            if not prov:
-                pkg.error(f"  {pfx}: {sv} (unknown provider)")
-            else:
-                log.out_plain(
-                    f"  \f[cyan]{pfx}: \f[orange]{sv}\f[] (provider: \f[green]{prov}\f[])"
-                )
+            log.out_plain(
+                f"  \f[cyan]{pfx}: \f[orange]{sv}\f[] (provider: \f[green]{prov}\f[])"
+            )
             # warn about redundancy
             if prov in pkg.depends and prov != "dinit-chimera":
                 pkg.log_warn(f"redundant runtime dependency '{prov}'")
@@ -474,7 +428,7 @@ def _scan_symlinks(pkg):
         # otherwise it's a broken symlink, relativize to destdir
         sdest = sdest.relative_to(pkg.destdir)
         # check each subpackage for the file
-        for sp in pkg.rparent.subpkg_list:
+        for sp in pkg.rparent.subpkg_all:
             np = sp.destdir / sdest
             if _exists_link(np):
                 log.out_plain(
@@ -523,7 +477,7 @@ def invoke(pkg):
     if not pkg.options["scanrundeps"]:
         return
 
-    with flock.lock(flock.apklock(pkg.rparent.profile().arch)):
+    with flock.lock(flock.apklock(pkg.rparent.profile.arch)):
         if not pkg.autopkg:
             _scan_so(pkg)
             _scan_pc(pkg)

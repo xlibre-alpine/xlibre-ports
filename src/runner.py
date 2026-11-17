@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 cbpath = None
 rtpath = None
 
@@ -51,6 +49,7 @@ opt_statusfd = None
 opt_bulkcont = False
 opt_allowcat = "main user"
 opt_restricted = False
+opt_noci = False
 opt_updatecheck = False
 opt_acceptsum = False
 opt_maint = "unknown <cports@local>"
@@ -115,7 +114,7 @@ def handle_options():
     global opt_arch, opt_tltocache
     global opt_harch, opt_gen_dbg, opt_check, opt_ccache, opt_tltocachesize
     global opt_sccache, opt_makejobs, opt_lthreads, opt_nocolor, opt_signkey
-    global opt_force, opt_mdirtemp, opt_allowcat, opt_restricted
+    global opt_force, opt_mdirtemp, opt_allowcat, opt_restricted, opt_noci
     global opt_nonet, opt_dirty, opt_statusfd, opt_keeptemp, opt_forcecheck
     global opt_checkfail, opt_stage, opt_altrepo, opt_stagepath, opt_bldroot
     global opt_blddir, opt_pkgpath, opt_srcpath, opt_cchpath, opt_updatecheck
@@ -384,6 +383,7 @@ def handle_options():
         opt_restricted = bcfg.getboolean(
             "allow_restricted", fallback=opt_restricted
         )
+        opt_noci = not bcfg.getboolean("allow_ci", fallback=not opt_noci)
         opt_nonet = not bcfg.getboolean("remote", fallback=not opt_nonet)
         opt_linter = bcfg.get("linter", fallback=opt_linter).strip()
         opt_formatter = bcfg.get("formatter", fallback=opt_formatter).strip()
@@ -504,7 +504,12 @@ def handle_options():
     if cmdline.accept_checksums:
         opt_acceptsum = True
 
-    ncores = len(os.sched_getaffinity(0))
+    try:
+        # may fail with EINVAL
+        ncores = len(os.sched_getaffinity(0)) or 1
+    except Exception:
+        # may not fail but may return None
+        ncores = os.cpu_count() or 1
 
     if opt_makejobs == 0:
         opt_makejobs = ncores
@@ -558,13 +563,8 @@ def init_late():
 
     if opt_keypath:
         paths.init_keys(opt_keypath)
-    else:
-        kp = sign.get_keypath()
-        if kp:
-            paths.init_keys(kp.parent)
-        else:
-            # fallback
-            paths.init_keys("etc/keys")
+    elif sign.get_keypath():
+        paths.init_keys(sign.get_keypath().parent)
 
     # set compression type
     autil.set_compression(opt_comp)
@@ -1238,7 +1238,7 @@ def do_prune_sources(tgt):
     logger.get().out("Collecting checksums...")
     shaset = set()
     for tmpln in tmpls:
-        with (paths.distdir() / tmpln / "template.py").open("r") as inf:
+        with (paths.distdir() / tmpln / "template.py").open() as inf:
             for ln in inf.readlines():
                 for sha in re.findall(r'"[0-9a-fA-F]{64}"', ln):
                     shaset.add(sha.strip('"').lower())
@@ -1374,9 +1374,9 @@ def do_relink_subpkgs(tgt):
                 continue
 
     # recreate symlinks
-    for pn in links:
+    for pn, pv in links.items():
         repo, jpn = pn.split("/")
-        for sn in links[pn]:
+        for sn in pv:
             fp = ddir / repo / sn
             if fp.exists():
                 if not fp.is_symlink():
@@ -1447,9 +1447,9 @@ def do_print_build_graph(tgt):
     _print_deps(root)
 
 
-def _get_unbuilt(outdated=False):
+def _get_unbuilt(outdated=False, skipped=False):
     from cbuild.core import chroot, template, paths
-    from cbuild.apk import util
+    import json
     import subprocess
 
     cats = opt_allowcat.strip().split()
@@ -1467,36 +1467,40 @@ def _get_unbuilt(outdated=False):
         rbase = repop / tarch
         repof = rbase / "Packages.adb"
         if not repof.is_file():
-            repof = rbase / "APKINDEX.tar.gz"
-        if not repof.is_file():
             return
         outp = subprocess.run(
             [
+                "env",
+                "APK_CONFIG=/dev/null",
                 paths.apk(),
                 "--arch",
                 tarch,
-                "--allow-untrusted",
                 "--root",
                 paths.bldroot(),
                 "--repository",
                 str(repof),
-                "search",
+                "query",
                 "--from",
                 "none",
-                "-e",
-                "-o",
-                "-a",
+                "--format=json",
+                "--fields=name,origin,version",
+                "--all-matches",
+                "*",
             ],
             capture_output=True,
+            check=False,
         )
         if outp.returncode != 0:
             return
-        for ver in outp.stdout.strip().split():
-            vers = ver.strip().decode()
-            pn, pv = util.get_namever(vers)
+        jsn = json.loads(outp.stdout.decode())
+        for ver in jsn:
+            if "origin" in ver:
+                pn = ver["origin"]
+            else:
+                pn = ver["name"]
             if pn in repovers:
                 continue
-            repovers[pn] = pv
+            repovers[pn] = ver["version"]
 
     # stage versions come first
     for cat in cats:
@@ -1524,6 +1528,7 @@ def _get_unbuilt(outdated=False):
             None,
             init=False,
             allow_restricted=opt_restricted,
+            allow_ci=not opt_noci,
         )
         mods[pn] = tmpl
         modv = tmpl._raw_mod
@@ -1534,10 +1539,11 @@ def _get_unbuilt(outdated=False):
             or not hasattr(modv, "pkgrel")
         ):
             vers.append(pn)
+            continue
         # get the metadata we need
-        apn = getattr(modv, "pkgname")
-        apv = getattr(modv, "pkgver")
-        apr = getattr(modv, "pkgrel")
+        apn = modv.pkgname
+        apv = modv.pkgver
+        apr = modv.pkgrel
         if apv is None or apr is None:
             prv = ""
         else:
@@ -1557,6 +1563,7 @@ def _get_unbuilt(outdated=False):
     fvers = []
     tvers = {}
     tmpls = {}
+    skipmap = {}
 
     def _get_tmpl(pn):
         try:
@@ -1565,8 +1572,10 @@ def _get_unbuilt(outdated=False):
             tmpls[pn] = tmpl
             tvers[pn] = f"{tmpl.pkgver}-r{tmpl.pkgrel}"
             # sentinel
-            if tmpls[pn].broken:
+            brok = tmpls[pn].broken
+            if brok:
                 tmpls[pn] = True
+                skipmap[pn] = brok
                 return True
         except Exception:
             tmpls[pn] = False
@@ -1585,12 +1594,18 @@ def _get_unbuilt(outdated=False):
         for dpn in tmpl.get_build_deps():
             if dpn in tmpls:
                 if tmpls[dpn] is True:
+                    if pn not in skipmap:
+                        skipmap[pn] = "indirect"
                     return True
             else:
                 if _get_tmpl(dpn):
+                    if pn not in skipmap:
+                        skipmap[pn] = "indirect"
                     return True
             # recurse
             if _check_tmpls(dpn):
+                if pn not in skipmap:
+                    skipmap[pn] = "indirect"
                 return True
         # mark it, don't need to go over it again
         tmpls[pn] = False
@@ -1604,6 +1619,8 @@ def _get_unbuilt(outdated=False):
         fvers.append(pn)
 
     if not fvers:
+        if skipped:
+            return [], skipmap
         return []
 
     vers = fvers
@@ -1614,9 +1631,38 @@ def _get_unbuilt(outdated=False):
         # recursively check for explicit brokenness
         if _check_tmpls(pn):
             continue
-        fvers.append((pn, tvers[pn] if pn in tvers else None))
+        fvers.append((pn, tvers.get(pn, None)))
+
+    if skipped:
+        return fvers, skipmap
 
     return fvers
+
+
+def do_print_build_deps(tgt):
+    from cbuild.core import template, chroot, errors
+
+    if len(cmdline.command) < 2:
+        raise errors.CbuildException("print-build-graph needs a package name")
+
+    mdeps = []
+
+    for pkgn in cmdline.command[1:]:
+        tmpl = template.Template(
+            pkgn,
+            opt_arch if opt_arch else chroot.host_cpu(),
+            True,
+            False,
+            (1, 1),
+            False,
+            False,
+            None,
+            target="lint",
+        )
+        mdeps += tmpl.hostmakedepends
+        mdeps += tmpl.makedepends
+
+    print(" ".join(sorted(set(mdeps))))
 
 
 def do_update_check(tgt):
@@ -1640,10 +1686,8 @@ def do_update_check(tgt):
             target="lint",
         )
 
-        if len(tmpl.pkgver) > verlen:
-            verlen = len(tmpl.pkgver)
-        if len(tmpl.full_pkgname) > namelen:
-            namelen = len(tmpl.full_pkgname)
+        verlen = max(len(tmpl.pkgver), verlen)
+        namelen = max(len(tmpl.full_pkgname), namelen)
 
         return tmpl
 
@@ -1755,6 +1799,13 @@ def do_print_mismatched(tgt):
                 print(f"{pkgr.pkgname} -> {spkg.pkgname}")
 
 
+def do_print_broken(tgt):
+    pl, skipmap = _get_unbuilt(False, True)
+
+    for pkgn, pkgr in skipmap.items():
+        print(f"{pkgn}: {pkgr}")
+
+
 def do_pkg(tgt, pkgn=None, force=None, check=None, stage=None):
     from cbuild.core import build, chroot, template, errors, paths
     from cbuild.util import compiler
@@ -1799,6 +1850,7 @@ def do_pkg(tgt, pkgn=None, force=None, check=None, stage=None):
             force_check=opt_forcecheck,
             stage=bstage,
             allow_restricted=opt_restricted,
+            allow_ci=not opt_noci,
             data=opt_tdata,
             linter=opt_linter,
             formatter=opt_formatter,
@@ -1997,7 +2049,7 @@ def _bulkpkg(pkgs, statusf, do_build, do_raw, version):
         ofailed = failed
         failed = False
         tp = _do_with_exc(
-            lambda: template.Template(
+            lambda pn=pn: template.Template(
                 pn,
                 tarch,
                 opt_force,
@@ -2013,6 +2065,7 @@ def _bulkpkg(pkgs, statusf, do_build, do_raw, version):
                 force_check=opt_forcecheck,
                 bulk_mode=True,
                 allow_restricted=opt_restricted,
+                allow_ci=not opt_noci,
                 data=opt_tdata,
             )
         )
@@ -2076,7 +2129,7 @@ def _bulkpkg(pkgs, statusf, do_build, do_raw, version):
                     for tmpn in flist:
                         do_build.append(tmpn)
                 else:
-                    print(" ".join(flist))
+                    print((" " if not version else "\n").join(flist))
         else:
             for pn in flist:
                 tp = templates[pn]
@@ -2087,9 +2140,9 @@ def _bulkpkg(pkgs, statusf, do_build, do_raw, version):
                     continue
                 # ensure to write the status
                 if _do_with_exc(
-                    lambda: build.build(
+                    lambda tp=tp: build.build(
                         "pkg",
-                        templates[pn],
+                        tp,
                         {},
                         dirty=False,
                         keep_temp=False,
@@ -2208,12 +2261,12 @@ def _collect_blist(pkgs):
             if pkg == "status:outdated":
                 rpkgs += list(map(lambda v: v[0], _get_unbuilt(True)))
                 continue
-            with open(pkg.removeprefix("status:"), "r") as inf:
+            with open(pkg.removeprefix("status:")) as inf:
                 rpkgs += _collect_status(inf)
             continue
         # files
         if pkg.startswith("file:") and pkg != "file:-":
-            with open(pkg.removeprefix("file:"), "r") as inf:
+            with open(pkg.removeprefix("file:")) as inf:
                 for ln in inf:
                     rpkgs += _collect_blist([ln.strip()])
             continue
@@ -2276,7 +2329,10 @@ def do_prepare_upgrade(tgt):
 
     pkgn = cmdline.command[1]
 
-    chroot.chroot_check()
+    if opt_mdirtemp:
+        chroot.install()
+    else:
+        chroot.chroot_check()
 
     tmpl = template.Template(
         pkgn,
@@ -2340,7 +2396,7 @@ def do_prepare_upgrade(tgt):
 
 def do_bump_pkgver(tgt):
     from cbuild.core import chroot, logger, template, errors
-    from cbuild.apk import cli as acli
+    from cbuild.apk import util as autil
     import pathlib
 
     if len(cmdline.command) != 3:
@@ -2349,7 +2405,7 @@ def do_bump_pkgver(tgt):
     pkgn = cmdline.command[1]
     pkgv = cmdline.command[2]
 
-    if not acli.check_version(pkgv):
+    if not autil.version_validate(pkgv):
         raise errors.CbuildException(f"version '{pkgv}' is invalid")
 
     try:
@@ -2665,6 +2721,504 @@ def do_commit(tgt):
             )
 
 
+def do_compare(tgt):
+    import hashlib
+    import json
+    import stat
+    import subprocess
+
+    from cbuild.core import chroot, errors, logger, paths, template
+    from cbuild.apk import cli
+
+    if len(cmdline.command) < 2:
+        raise errors.CbuildException("compare needs a template name")
+
+    # we need a bldroot in place
+    chroot.chroot_check()
+
+    # just in case
+    paths.prepare()
+
+    pkgn = cmdline.command[1]
+    tarch = opt_arch if opt_arch else chroot.host_cpu()
+
+    acache = paths.cbuild_cache() / "apk" / tarch
+
+    tmpl = template.Template(
+        pkgn,
+        tarch,
+        True,
+        False,
+        (1, 1),
+        False,
+        False,
+        None,
+        target="lint",
+    )
+    if not tmpl.is_built(True):
+        raise errors.CbuildException(f"'{pkgn}' is not built locally")
+
+    # do a total origin query, remote only
+    if not opt_nonet:
+        # fetch remote indexes
+        chroot.update(tmpl)
+        # only then query
+        rq = cli.query(
+            ["name", "version", "repositories"],
+            ["--match", "origin", tmpl.pkgname],
+            tmpl,
+            allow_local=False,
+            use_stage=False,
+        )
+        if rq is None:
+            raise errors.CbuildException(f"failed to query remote for '{pkgn}'")
+    else:
+        rq = []
+
+    # define a function we'll be using to dump both indexes and packages
+    def _adbdump(file):
+        sp = subprocess.run(
+            [paths.apk(), "adbdump", "--format=json", file],
+            capture_output=True,
+            check=False,
+        )
+        if sp.returncode != 0 or len(sp.stdout) == 0:
+            raise errors.CbuildException(f"failed to dump ADB '{file}'")
+        return json.loads(sp.stdout.decode())
+
+    # build a map of repo hashes for querying cache files
+    # then use it to build a mapping of pkg names to truncated hashes for cache
+    repoh = {}
+    pkg_hashes = {}
+    for entry in rq:
+        for rp in entry["repositories"]:
+            if rp not in repoh:
+                hf = hashlib.sha256(rp.encode()).hexdigest()[0:8]
+                idxp = acache / f"APKINDEX.{hf}.tar.gz"
+                if not idxp.is_file():
+                    raise errors.CbuildException(
+                        f"no matching index file for '{rp}'"
+                    )
+                repoh[rp] = idxp
+    for ip in repoh.values():
+        jl = _adbdump(ip)
+        if "packages" not in jl:
+            raise errors.CbuildException(f"malformed index '{ip}'")
+        for entry in jl["packages"]:
+            en = entry["name"]
+            eh = entry["hashes"][0:8]
+            pkg_hashes[en] = eh
+
+    trepo = tmpl.repository
+    repop = paths.repository()
+
+    def _resolve_pkg(
+        pkgname,
+        pkgver,
+        pkgrel,
+        repob,
+    ):
+        pkgf = f"{pkgname}-{pkgver}-r{pkgrel}.apk"
+        if pkgname.endswith("-dbg"):
+            return repob / "debug" / tarch / pkgf
+        return repob / tarch / pkgf
+
+    def _resolve_pkgs(pkg, pkgm):
+        pkgr = repop / trepo
+        mpkg = _resolve_pkg(pkg.pkgname, pkg.pkgver, pkg.pkgrel, pkgr)
+        if not mpkg.is_file():
+            raise errors.CbuildException(
+                f"'{pkg.pkgname}' does not exist in '{pkgr}'"
+            )
+        pkgm[pkg.pkgname] = mpkg
+        for apkg, adesc, iif, takef in template.autopkgs:
+            mpkg = _resolve_pkg(
+                f"{pkg.pkgname}-{apkg}", pkg.pkgver, pkg.pkgrel, pkgr
+            )
+            if mpkg.is_file():
+                pkgm[f"{pkg.pkgname}-{apkg}"] = mpkg
+
+    # resolve local package paths
+    lpkg_map = {}
+    _resolve_pkgs(tmpl, lpkg_map)
+    # resolve each subpackage
+    for sp in tmpl.subpkg_list:
+        _resolve_pkgs(sp, lpkg_map)
+
+    # resolve and fetch all remote packages, build an equivalent list
+    rpkg_map = {}
+    missing_list = []
+
+    # go over each remote entry and build its real filename and map it
+    # also build a list of missing packages to fetch
+    for entry in rq:
+        fn = f"{entry['name']}-{entry['version']}.{pkg_hashes[entry['name']]}.apk"
+        pkgp = acache / fn
+        rpkg_map[entry["name"]] = pkgp
+        if not pkgp.is_file():
+            missing_list.append(entry["name"])
+
+    # fetch anything that's missing
+    if missing_list:
+        fl = subprocess.run(
+            [
+                paths.apk(),
+                "fetch",
+                "-o",
+                acache,
+                "--pkgname-spec",
+                "${name}-${version}.${hash:8}.apk",
+                *missing_list,
+            ],
+            check=False,
+        )
+        if fl.returncode != 0:
+            raise errors.CbuildException("failed to fetch packages")
+
+    # verify we have everything
+    for en, pkgp in rpkg_map.items():
+        if not pkgp.is_file():
+            raise errors.CbuildException(f"missing remote file '{pkgp}'")
+
+    # also transform the adbdumps into something useful
+    def _dump_pkg(f):
+        ad = _adbdump(f)
+        inf = ad["info"]
+        # direct field mappings
+        res = {
+            "version": inf["version"],
+            "description": inf["description"],
+            "license": inf["license"],
+            "url": inf["url"],
+            "installed-size": int(inf["installed-size"]),
+        }
+        # any optional metadata we track
+        res["depends"] = inf.get("depends", [])
+        res["provides"] = inf.get("provides", [])
+        res["install-if"] = inf.get("install-if", [])
+        # now translate paths into something nicer
+        paths = []
+        for p in ad.get("paths", []):
+            if "name" not in p:
+                # root, skip it, we don't care
+                continue
+            # path (dirs end with /), acl, size; -1 size is a link
+            dpath = f"/{p['name']}"
+            pfiles = p.get("files", [])
+            paths.append((dpath, p["acl"], "directory", len(pfiles)))
+            # now files
+            for fp in pfiles:
+                fsz = -1
+                ftype = "link"
+                if "target" not in fp:
+                    # not a symlink
+                    fsz = int(fp["size"])
+                    ftype = "file"
+                paths.append((f"{dpath}/{fp['name']}", fp["acl"], ftype, fsz))
+        # sort the paths in reverse order so we can drop extra directories
+        paths.sort(key=lambda v: v[0], reverse=True)
+        defacl = {"mode": 0o755, "user": "root", "group": "root"}
+        # now go over it and if we encounter a directory with default mode
+        # (root:root 755) that has files, drop its entry; additionally, for
+        # any directory entry first encountered, drop any parent entries
+        # that have no files and have default mode
+        maxl = len(paths)
+        for idx in range(maxl):
+            if paths[idx] is None:
+                # skip over whatever may have been removed before
+                continue
+            path, acl, ftype, fsz = paths[idx]
+            if ftype != "directory":
+                continue
+            if fsz != 0 and acl == defacl:
+                paths[idx] = None
+            # now descend
+            spath = path
+            for sidx in range(idx + 1, maxl):
+                rsl = spath.rfind("/")
+                if rsl < 0:
+                    break
+                spath = spath[0:rsl]
+                ppath, pacl, pftype, pfsz = paths[sidx]
+                if ppath != spath:
+                    # we encountered probably a file; handle on parent iter
+                    break
+                if pftype != "directory":
+                    # this should never happen given the above but
+                    break
+                if pfsz != 0 or pacl != defacl:
+                    # non-empty or different acl; handle on next iter
+                    break
+                # else this matches, drop the entry
+                paths[sidx] = None
+        # now remove gaps
+        npaths = []
+        for p in paths:
+            if p is None:
+                continue
+            npaths.append(p)
+        res["paths"] = npaths
+        return res
+
+    ldumps = {}
+    rdumps = {}
+
+    for en, pkgp in lpkg_map.items():
+        ldumps[en] = _dump_pkg(pkgp)
+    for en, pkgp in rpkg_map.items():
+        rdumps[en] = _dump_pkg(pkgp)
+
+    log = logger.get()
+    need_nl = False
+
+    # initial comparison: check if the package list changed at all
+    lpkgs = sorted(lpkg_map.keys())
+    rpkgs = sorted(rpkg_map.keys())
+    if lpkgs != rpkgs:
+        dropped = []
+        added = []
+        for p in rpkgs:
+            if p not in lpkg_map:
+                dropped.append(p)
+        for p in lpkgs:
+            if p not in rpkg_map:
+                added.append(p)
+        if added or dropped:
+            log.out_plain("\f[bold]ADDED/REMOVED PACKAGES:\f[]")
+        for d in dropped:
+            log.out_plain(f" \f[bold,red]- {d}\f[]")
+        for d in added:
+            log.out_plain(f" \f[bold,green]+ {d}\f[]")
+        # marker
+        need_nl = True
+
+    # just so it's easier to compare
+    dummy_pkg = {
+        "version": None,
+        "description": None,
+        "license": None,
+        "url": None,
+        "installed-size": None,
+        "paths": [],
+    }
+
+    # make a sorted list of all package names (on either end)
+    # and build a map containing 2-tuples, with each (may be None)
+    allpkgs = {}
+    allnames = {}
+    for pn in lpkgs:
+        allnames[pn] = True
+    for pn in rpkgs:
+        allnames[pn] = True
+    for pn in sorted(allnames.keys()):
+        allpkgs[pn] = (rdumps.get(pn, dummy_pkg), ldumps.get(pn, dummy_pkg))
+
+    def _compare_field(fname, remote, local):
+        remote = remote[fname]
+        local = local[fname]
+        # now compare
+        if local == remote:
+            return False
+        elif local and remote and local != remote:
+            log.out_plain(f"  -{fname}: \f[red]{remote}\f[]")
+            log.out_plain(f"  +{fname}: \f[green]{local}\f[]")
+        elif local:
+            log.out_plain(f"  +{fname}: \f[green]{local}\f[]")
+        else:
+            log.out_plain(f"  -{fname}: \f[red]{remote}\f[]")
+        return True
+
+    def _humanize(bsz):
+        if abs(bsz) > (1024 * 1024):
+            return f"{bsz / (1024 * 1024):.2f} MiB"
+        elif abs(bsz) > 1024:
+            return f"{bsz / 1024:.2f} KiB"
+        else:
+            return f"{bsz} B"
+
+    def _compare_size(fname, remote, local):
+        remote = remote[fname] or 0
+        local = local[fname] or 0
+        diff = local - remote
+        pfx = "~"
+        if diff == 0:
+            return False
+        elif diff > 0:
+            color = "green"
+            prn = f"+{_humanize(diff)}"
+            if not remote:
+                pfx = "+"
+        else:
+            color = "red"
+            prn = _humanize(diff)
+            if not local:
+                pfx = "-"
+        log.out_plain(
+            f"  {pfx}{fname}: {_humanize(local)} (\f[{color}]{prn}\f[])"
+        )
+
+    def _compare_deps(fname, fdesc, remote, local):
+        remote = remote.get(fname, [])
+        local = local.get(fname, [])
+        added = []
+        removed = []
+        for d in remote:
+            if d not in local:
+                removed.append(d)
+        for d in local:
+            if d not in remote:
+                added.append(d)
+        if removed:
+            log.out_plain(f"\n  \f[bold]Removed {fdesc}:\f[]")
+            for d in sorted(removed):
+                log.out_plain(f"    \f[red]-{d}\f[]")
+        if added:
+            log.out_plain(f"\n  \f[bold]Added {fdesc}:\f[]")
+            for d in sorted(added):
+                log.out_plain(f"    \f[green]+{d}\f[]")
+        return (len(added) + len(removed)) > 0
+
+    def _strmode(mode):
+        ret = []
+        ret.append("r" if mode & stat.S_IRUSR else "-")
+        ret.append("w" if mode & stat.S_IWUSR else "-")
+        match mode & (stat.S_IXUSR | stat.S_ISUID):
+            case 0:
+                ret.append("-")
+            case stat.S_IXUSR:
+                ret.append("x")
+            case stat.S_ISUID:
+                ret.append("S")
+            case _:
+                ret.append("s")
+        ret.append("r" if mode & stat.S_IRGRP else "-")
+        ret.append("w" if mode & stat.S_IWGRP else "-")
+        match mode & (stat.S_IXGRP | stat.S_ISGID):
+            case 0:
+                ret.append("-")
+            case stat.S_IXGRP:
+                ret.append("x")
+            case stat.S_ISGID:
+                ret.append("S")
+            case _:
+                ret.append("s")
+        ret.append("r" if mode & stat.S_IROTH else "-")
+        ret.append("w" if mode & stat.S_IWOTH else "-")
+        match mode & (stat.S_IXOTH | stat.S_ISVTX):
+            case 0:
+                ret.append("-")
+            case stat.S_IXOTH:
+                ret.append("x")
+            case stat.S_ISVTX:
+                ret.append("T")
+            case _:
+                ret.append("t")
+        return "".join(ret)
+
+    def _compare_path(remf, locf, oldsz=None):
+        if remf is None:
+            path, acl, ftype, fsz = locf
+            color = "green"
+            sign = "+"
+        elif locf is None:
+            path, acl, ftype, fsz = remf
+            color = "red"
+            sign = "-"
+        else:
+            _compare_path(remf, None)
+            _compare_path(None, locf, remf[3])
+            return
+        # print one path
+        stype = ftype[0].upper()
+        smode = _strmode(acl["mode"])
+        bstr = f"\f[{color},bold]{sign}{stype}:\f[] {path}"
+        if stype != "L":
+            bstr += f" [\f[bold]{smode}\f[]]"
+        bstr += f" {{\f[bold]{acl['user']}:{acl['group']}\f[]}}"
+        if stype == "D" and fsz > 0:
+            bstr += f" (\f[bold]{fsz} entries\f[])"
+        elif stype == "F":
+            diffs = None
+            if oldsz:
+                diff = fsz - oldsz
+                if diff > 0:
+                    diffs = f"\f[green]+{_humanize(diff)}\f[]"
+                elif diff < 0:
+                    diffs = f"\f[red]{_humanize(diff)}\f[]"
+            if diffs:
+                bstr += f" (\f[bold]{_humanize(fsz)}, {diffs})"
+            else:
+                bstr += f" (\f[bold]{_humanize(fsz)}\f[])"
+        log.out_plain(f"    {bstr}")
+
+    def _compare_paths(remote, local):
+        remote = remote["paths"]
+        local = local["paths"]
+        # build a combined path map
+        pathmap = {}
+        for p in remote:
+            pathmap[p[0]] = (p, None)
+        for p in local:
+            pn = p[0]
+            if pn in pathmap:
+                # remote path exists
+                remp = pathmap[pn][0]
+                if remp == p:
+                    # remote path is identical so we don't care
+                    del pathmap[pn]
+                else:
+                    # local path is changed from remote
+                    pathmap[pn] = (pathmap[pn][0], p)
+            else:
+                # only local path exists
+                pathmap[pn] = (None, p)
+        # flatten it and sort for presentation
+        pathlist = sorted(pathmap.keys())
+        if len(pathlist) > 0:
+            log.out_plain("\n  \f[bold]Changed paths:\f[]")
+        else:
+            # bail
+            return False
+        # now dump the information
+        for cp in pathlist:
+            a, b = pathmap[cp]
+            _compare_path(*pathmap[cp])
+        return True
+
+    # now we can finally do some comparisons...
+    for pn, ptup in allpkgs.items():
+        changed = False
+        if need_nl:
+            log.out_plain("")
+        need_nl = True
+        # deconstruct to get each side
+        rpkg, lpkg = ptup
+        log.out_plain(f"\f[bold]{pn}:\f[]")
+        # mandatory: version, description, license, url, installed-size
+        if _compare_field("version", rpkg, lpkg):
+            changed = True
+        if _compare_field("description", rpkg, lpkg):
+            changed = True
+        if _compare_field("license", rpkg, lpkg):
+            changed = True
+        if _compare_field("url", rpkg, lpkg):
+            changed = True
+        if _compare_size("installed-size", rpkg, lpkg):
+            changed = True
+        # optional: depends, provides, install-if
+        if _compare_deps("depends", "dependencies", rpkg, lpkg):
+            changed = True
+        if _compare_deps("provides", "providers", rpkg, lpkg):
+            changed = True
+        if _compare_deps("install-if", "install-if", rpkg, lpkg):
+            changed = True
+        # finally, paths
+        if _compare_paths(rpkg, lpkg):
+            changed = True
+        if not changed:
+            log.out_plain(" No changes.")
+
+
 def do_interactive(tgt):
     import os
     import shlex
@@ -2746,6 +3300,7 @@ command_handlers = {
     "chroot": (do_pkg, "Enter an interactive bldroot chroot"),
     "clean": (do_clean, "Clean the build directory"),
     "commit": (do_commit, "Commit the changes in the template"),
+    "compare": (do_compare, "Compare the local build with the remote repo"),
     "configure": (do_pkg, "Run up to configure phase of a template"),
     "cycle-check": (
         do_cycle_check,
@@ -2767,6 +3322,10 @@ command_handlers = {
         do_prepare_upgrade,
         "Update template checksums and reset pkgrel",
     ),
+    "print-build-dependencies": (
+        do_print_build_deps,
+        "Print the build dependencies of a template",
+    ),
     "print-build-graph": (
         do_print_build_graph,
         "Print the build graph of a template",
@@ -2774,6 +3333,10 @@ command_handlers = {
     "print-mismatched-subpkgs": (
         do_print_mismatched,
         "Print subpackages that have wrong names",
+    ),
+    "print-broken-pkgs": (
+        do_print_broken,
+        "Print all packages that cannot be built on the arch combo",
     ),
     "prune-pkgs": (
         do_prune_pkgs,
@@ -2868,9 +3431,8 @@ def fire():
         chroot.set_host(opt_harch)
     else:
         chroot.set_host(cli.get_arch())
-
-    # check container and while at it perform arch checks
-    chroot.chroot_check(error=False)
+        # check container and while at it perform arch checks
+        chroot.chroot_check(error=False)
 
     # register extra packages
     chroot.set_extras(opt_epkgs.split())
@@ -2902,7 +3464,9 @@ def fire():
     cli.set_network(not opt_nonet)
 
     try:
-        aret = subprocess.run([paths.apk(), "--version"], capture_output=True)
+        aret = subprocess.run(
+            [paths.apk(), "--version"], capture_output=True, check=False
+        )
     except FileNotFoundError:
         logger.get().out(
             f"\f[red]cbuild: apk not found (expected path: {paths.apk()})"
@@ -2914,7 +3478,9 @@ def fire():
         sys.exit(1)
 
     try:
-        subprocess.run([paths.bwrap(), "--version"], capture_output=True)
+        subprocess.run(
+            [paths.bwrap(), "--version"], capture_output=True, check=False
+        )
     except FileNotFoundError:
         logger.get().out(
             f"\f[red]cbuild: bwrap not found (expected path: {paths.bwrap()})"

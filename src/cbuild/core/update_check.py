@@ -13,7 +13,8 @@ import gzip
 import io
 import re
 
-from cbuild.apk import cli as apkcli
+from urllib.error import URLError, HTTPError
+from cbuild.apk import util as autil
 
 
 # implements version sorting as in gnu sort(1) version sort
@@ -88,20 +89,22 @@ class UpdateCheck:
         self.pkgver = tmpl.pkgver
         self.single_directory = False
         self.pattern = None
+        self.pattern_style = None
         self.group = None
         self.vdprefix = None
         self.vdsuffix = None
+        self.agent_name = "cbuild-update-check"
         self.ignore = []
 
     def _fetch(self, u):
         if u in self._urlcache:
-            return False
+            return False, True
 
         req = ureq.Request(
             u,
             None,
             {
-                "User-Agent": "cbuild-update-check/4.20.69",
+                "User-Agent": f"{self.agent_name}/4.20.69",
                 "Accept-Encoding": "gzip",
             },
         )
@@ -112,15 +115,24 @@ class UpdateCheck:
             else:
                 resp = f.read()
             ret = resp.decode("utf-8", "ignore")
-        except Exception:
-            return None
+        except HTTPError as e:
+            return None, int(e.code)
+        except URLError as e:
+            return None, str(e.reason)
+        except Exception as e:
+            return None, str(e)
 
         self._urlcache[u] = True
 
-        if len(ret) == 0:
-            return None
+        st = f.status
+        if st is None:
+            # probably an ftp
+            st = 200
 
-        return ret
+        if len(ret) == 0:
+            return None, int(st)
+
+        return ret, int(st)
 
     def collect_sources(self):
         if isinstance(self.url, str):
@@ -133,8 +145,7 @@ class UpdateCheck:
         urls = []
         # collect urls
         for s in self.template.source:
-            if s.startswith("!"):
-                s = s[1:]
+            s = s.removeprefix("!")
             bkt = s.rfind(">")
             bsl = s.rfind("/")
             if bkt > bsl:
@@ -240,7 +251,7 @@ class UpdateCheck:
             re.VERBOSE,
         )
 
-        req = self._fetch(urlpfx)
+        req, _ = self._fetch(urlpfx)
         if not req:
             return ret
 
@@ -261,9 +272,20 @@ class UpdateCheck:
         return ret
 
     def fetch_versions(self, url):
+        ps = None
         rx = None
         rxg = None
         pname = self.pkgname
+
+        # some common ones
+        git_forges = [
+            "github.com",
+            "//gitlab.",
+            "salsa.debian.org",
+            "bitbucket.org",
+            "codeberg.org",
+            "git.sr.ht",
+        ]
 
         if not self.url:
             # TODO: cran, crates.io
@@ -287,33 +309,6 @@ class UpdateCheck:
             elif "cpan." in url:
                 if pname == self.template.pkgname:
                     pname = pname.removeprefix("perl-")
-            elif "github.com" in url:
-                pn = "/".join(url.split("/")[3:5])
-                url = f"https://github.com/{pn}/tags.atom"
-                rx = rf"""
-                    /releases/tag/
-                    (v?|V?|{re.escape(pname)}-)?
-                    ([\d.]+)(?=") # match
-                """
-                rxg = 1
-            elif "//gitlab." in url or "salsa.debian.org" in url:
-                pn = "/".join(url.split("/")[0:5])
-                url = f"{pn}/-/tags?format=atom"
-                rx = rf"""
-                    {re.escape(pn)}/-/tags/
-                    (v?|V?|{re.escape(pname)}-)?
-                    ([\d.]+)(?=\") # match
-                """
-                rxg = 1
-            elif "bitbucket.org" in url:
-                pn = "/".join(url.split("/")[3:5])
-                url = f"https://bitbucket.org/{pn}/info/refs?service=git-upload-pack"
-                rx = rf"""
-                    refs/tags/
-                    (v?|V?|{re.escape(pname)}-)?
-                    ([\d.]+)(?!^) # match
-                """
-                rxg = 1
             elif "ftp.gnome.org" in url or "download.gnome.org" in url:
                 rx = rf"""
                     {re.escape(pname)}-
@@ -322,26 +317,13 @@ class UpdateCheck:
                 rxg = 0
                 url = f"https://download.gnome.org/sources/{pname}/cache.json"
             elif "archive.xfce.org" in url:
+                # not a forge but we hijack their gitlab
                 pn = "/".join(url.split("/")[4:6])
-                url = f"https://gitlab.xfce.org/{pn}/-/tags?format=atom"
-                rx = rf"""
-                    {re.escape(pn)}/-/tags/
-                    ({re.escape(pname)}-)?v? # lol
-                    ([\d.]+)(?=\") # match
-                """
-                rxg = 1
+                url = f"https://gitlab.xfce.org/{pn}"
+                ps = "git_forge"
             elif "kernel.org/pub/linux/kernel/" in url:
                 mver = ".".join(self.pkgver.split(".")[0:2])
                 rx = rf"{mver}[\d.]+(?=\.tar\.xz)"
-            elif "codeberg.org" in url:
-                pn = "/".join(url.split("/")[3:5])
-                url = f"https://codeberg.org/{pn}/tags"
-                rx = rf"""
-                    /archive/
-                    (v?|V?|{re.escape(pname)}-)?
-                    ([\d.]+)(?=\.tar\.gz) # match
-                """
-                rxg = 1
             elif "hg.sr.ht" in url:
                 pn = "/".join(url.split("/")[3:5])
                 url = f"https://hg.sr.ht/{pn}/tags"
@@ -351,19 +333,31 @@ class UpdateCheck:
                     ([\d.]+)(?=\.tar\.gz") # match
                 """
                 rxg = 1
-            elif "git.sr.ht" in url:
-                pn = "/".join(url.split("/")[3:5])
-                url = f"https://git.sr.ht/{pn}/info/refs"
-                rx = rf"""
-                    refs/tags/
-                    (v?|V?|{re.escape(pname)}-)?
-                    ([\d.]+)(?!^) # match
-                """
-                rxg = 1
             elif "pkgs.fedoraproject.org" in url:
                 url = f"https://pkgs.fedoraproject.org/repo/pkgs/{pname}"
             elif "pagure.io" in url:
                 url = f"https://pagure.io/{pname}/releases"
+            else:
+                for gf in git_forges:
+                    if gf in url:
+                        ps = "git_forge"
+                        break
+
+        if not ps:
+            ps = self.pattern_style
+
+        match ps:
+            case "git_forge":
+                # explicitly given url is taken as is
+                if not self.url:
+                    url = "/".join(url.split("/")[0:5])
+                url = f"{url}/info/refs?service=git-upload-pack"
+                rx = rf"""
+                    refs/tags/
+                    (v?|V?|{re.escape(pname)}-)?
+                    ([\d.]+)(?=\n) # match
+                """
+                rxg = 1
 
         if self.pattern:
             rx = self.pattern
@@ -394,19 +388,36 @@ class UpdateCheck:
         if self.verbose:
             print(f"Fetching '{url}' for version checks...")
 
-        req = self._fetch(url)
+        req, succ = self._fetch(url)
 
         if not req:
-            if req is False and self.verbose:
-                print(f"Already fetched '{url}', skipping...")
+            if self.verbose:
+                if req is False:
+                    print(f"Already fetched '{url}', skipping...")
+                    return []
+                elif isinstance(succ, str):
+                    print(f"Fetching '{url}' failed ({succ})")
+                else:
+                    print(f"Fetching '{url}' failed with status {succ}")
+            # record the failed status
+            self.status[url] = (False, succ, 0)
+            # and return empty
             return []
 
         reqs = re.findall(rx, req)
 
         if rxg is not None:
-            return list(map(lambda v: v[rxg].replace("_", "."), reqs))
+            vl = list(map(lambda v: v[rxg].replace("_", "."), reqs))
+        else:
+            vl = list(map(lambda v: v.replace("_", "."), reqs))
 
-        return list(map(lambda v: v.replace("_", "."), reqs))
+        # record for a summary
+        self.status[url] = (True, succ, len(vl))
+
+        if self.verbose:
+            print(f"Got {len(vl)} versions from '{url}' with status {succ}")
+
+        return vl
 
 
 def update_check(pkg, verbose=False, error=False):
@@ -428,7 +439,7 @@ def update_check(pkg, verbose=False, error=False):
         )
         modh = importlib.util.module_from_spec(modspec)
 
-        setattr(builtins, "self", uc)
+        builtins.self = uc
         modspec.loader.exec_module(modh)
         delattr(builtins, "self")
 
@@ -447,6 +458,9 @@ def update_check(pkg, verbose=False, error=False):
             fetch_versions = modh.fetch_versions
 
         # variables
+
+        if hasattr(modh, "pattern_style"):
+            uc.pattern_style = modh.pattern_style
 
         if hasattr(modh, "pattern"):
             uc.pattern = modh.pattern
@@ -475,6 +489,9 @@ def update_check(pkg, verbose=False, error=False):
         if hasattr(modh, "vdsuffix"):
             uc.vdsuffix = modh.vdsuffix
 
+        if hasattr(modh, "agent_name"):
+            uc.agent_name = modh.agent_name
+
     if uc.ignore is True or pkg.build_style == "meta":
         return checkvers
 
@@ -499,24 +516,54 @@ def update_check(pkg, verbose=False, error=False):
             cs += uc.expand_source(u)
 
     retry_delays = [0, 2, 5, 10]
-    vers = None
+    vers = []
+    status = {}
 
     for d in retry_delays:
-        vers = []
+        # urls to retry
+        rurls = []
+        # reset the cache too
+        uc._urlcache = {}
 
         for src in cs:
+            # reset status map
+            uc.status = {}
+            # now do the fetching
             if fetch_versions:
-                vers += fetch_versions(uc, src)
+                verl = list(fetch_versions(uc, src))
             else:
-                vers += uc.fetch_versions(src)
+                verl = list(uc.fetch_versions(src))
+            # update collective statuses
+            status.update(uc.status)
+            # got versions, yay?
+            if len(verl) > 0:
+                vers += verl
+                # skip trying this url again
+                continue
+            for u, st in uc.status.items():
+                if not isinstance(st[1], int) or st[1] >= 300:
+                    break
+            else:
+                # all success, so skip
+                continue
+            # something not as expected, so retry
+            rurls.append(src)
 
+        # got some versions, so stay silent
         if len(vers) > 0:
             break
+
+        # nothing left to try
+        if len(rurls) == 0:
+            break
+
+        # replace the old list with just the urls we're missing
+        cs = rurls
 
         time.sleep(d)
 
         if verbose:
-            print("No versions fetched, retrying...")
+            print("Some URLs did not succeed, retrying them...")
 
     vers = list(set(vers))
     vers.sort(key=_ver_conv)
@@ -525,7 +572,16 @@ def update_check(pkg, verbose=False, error=False):
         if error:
             return None
 
-        print(f"CAUTION: no version found for '{pkg.full_pkgname}'")
+        print(f"CAUTION: no versions found for '{pkg.full_pkgname}':")
+        for u, st in status.items():
+            if st[0] and st[1] == 200:
+                print(f"  * {u} fetched successfully")
+            elif st[0]:
+                print(f"  * {u} returned {st[1]}")
+            elif isinstance(st[1], str):
+                print(f"  * {u} failed ({st[1]})")
+            else:
+                print(f"  * {u} failed with status {st[1]}")
 
     for v in vers:
         if verbose:
@@ -543,7 +599,7 @@ def update_check(pkg, verbose=False, error=False):
         if ignored:
             continue
 
-        ret = apkcli.compare_version(
+        ret = autil.version_compare(
             uc.pkgver.replace("-", "."), v.replace("-", "."), False
         )
         if ret == -1:

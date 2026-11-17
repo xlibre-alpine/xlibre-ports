@@ -60,8 +60,8 @@ def get_hardening(prof, tmpl, hlist=None):
             raise errors.CbuildException("CFI requires hidden visibility")
 
     # ensure unsupported hardenings are never used
-    for k in supported_fields:
-        if archn not in supported_fields[k]:
+    for k, ka in supported_fields.items():
+        if archn not in ka:
             hdict[k] = False
 
     return hdict
@@ -219,7 +219,7 @@ def _get_gencflags(self, tmpl, name, extra_flags, debug, hardening, shell):
     else:
         bflags = []
 
-    ret = hflags + self._flags[name] + bflags + extra_flags
+    ret = hflags + self._flags[name] + bflags + (extra_flags or [])
 
     if debug >= 0:
         ret.append(f"-g{debug}")
@@ -239,7 +239,7 @@ def _get_ldflags(self, tmpl, name, extra_flags, debug, hardening, shell):
     else:
         bflags = []
 
-    ret = hflags + self._flags["LDFLAGS"] + bflags + extra_flags
+    ret = hflags + self._flags["LDFLAGS"] + bflags + (extra_flags or [])
 
     return _flags_ret(map(lambda v: str(v), ret), shell)
 
@@ -271,7 +271,7 @@ def _get_rustflags(self, tmpl, name, extra_flags, debug, hardening, shell):
         if debug > 0:
             bflags += [f"-Cdebuginfo={debug}"]
 
-    ret = self._flags["RUSTFLAGS"] + bflags + extra_flags
+    ret = self._flags["RUSTFLAGS"] + bflags + (extra_flags or [])
 
     return _flags_ret(map(lambda v: str(v), ret), shell)
 
@@ -283,7 +283,7 @@ def _get_goflags(self, tmpl, name, extra_flags, debug, hardening, shell):
     if hard["pie"]:
         bflags.append("-buildmode=pie")
 
-    ret = self._flags["GOFLAGS"] + bflags + extra_flags
+    ret = self._flags["GOFLAGS"] + bflags + (extra_flags or [])
 
     return _flags_ret(map(lambda v: str(v), ret), shell)
 
@@ -421,15 +421,13 @@ class Profile:
         else:
             debl = -1
 
+        efl = extra_flags or []
+
         return _flag_handlers[name](
             self,
             tmpl,
             name,
-            (
-                tmpl.tool_flags[name] + extra_flags
-                if name in tmpl.tool_flags
-                else extra_flags
-            ),
+            (tmpl.tool_flags[name] + efl) if name in tmpl.tool_flags else efl,
             debl,
             hardening,
             shell,
@@ -481,12 +479,18 @@ class Profile:
 _all_profiles = {}
 
 
-def init(cparser):
+def get_profile_paths():
     profiles = paths.distdir() / "etc/build_profiles"
+    archret = []
 
     for pf in profiles.glob("*.ini"):
-        archn = pf.with_suffix("").name
+        archret.append((pf, pf.with_suffix("").name))
 
+    return archret
+
+
+def init(cparser):
+    for pf, archn in get_profile_paths():
         cp = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
         )

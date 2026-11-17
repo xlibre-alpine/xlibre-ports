@@ -64,7 +64,9 @@ def keygen(size, eaddr, cfgfile, cfgpath):
         raise errors.CbuildException("attempt to overwrite an existing key")
 
     kout = subprocess.run(
-        ["openssl", "genrsa", "-out", keypath, str(size)], umask=0o007
+        ["openssl", "genrsa", "-out", keypath, str(size)],
+        umask=0o007,
+        check=False,
     )
 
     if not kout.returncode == 0:
@@ -79,7 +81,8 @@ def keygen(size, eaddr, cfgfile, cfgpath):
             "-pubout",
             "-out",
             str(keypath) + ".pub",
-        ]
+        ],
+        check=False,
     )
 
     if not pout.returncode == 0:
@@ -104,7 +107,7 @@ def keygen(size, eaddr, cfgfile, cfgpath):
         rkpath = rkpath.relative_to(paths.distdir())
 
     if "signing" in cfgfile:
-        with open(cfgpath, "r") as cf:
+        with open(cfgpath) as cf:
             with open(cfgpath + ".new", "w") as ocf:
                 for ln in cf:
                     ocf.write(ln)

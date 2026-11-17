@@ -2,119 +2,9 @@ from cbuild.core import logger, template, paths, chroot
 from cbuild.apk import util as autil, cli as apki
 from cbuild.util import flock
 
-import os
-import urllib.request
-import subprocess
-import tempfile
-import shutil
-import pathlib
-
 # avoid re-parsing same templates every time; the pkgver will
 # never be conditional and that is the only thing we care about
 _tcache = {}
-
-
-def _ensure_apk_tools_static(pkg):
-    """
-    Download and extract the latest apk-tools-static-bin package from
-    Chimera Linux repository and place it in the bldroot.
-    """
-    dest = paths.bldroot() / "usr/bin/apk.static"
-    if dest.is_file():
-        return
-
-    # Get the current architecture
-    arch = chroot.host_cpu()
-    
-    # Download the apk-tools-static-bin package
-    version = "3.0.3-r0"
-    url = f"https://repo.chimera-linux.org/current/main/{arch}/apk-tools-static-bin-{version}.apk"
-    
-    logger.get().out(f"cbuild: fetching apk-tools-static-bin for {arch}...")
-    
-    # Create temporary directory for the download
-    tmpdir = tempfile.mkdtemp()
-    apk_file = os.path.join(tmpdir, "apk-tools-static-bin.apk")
-    
-    try:
-        # Download the APK file
-        with urllib.request.urlopen(url) as resp, open(apk_file, "wb") as outf:
-            shutil.copyfileobj(resp, outf)
-        
-        # Ensure destination directory exists
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Extract the APK file using apk-tools 3.x
-        # Use apk add with --root to extract to a temporary location
-        tmp_extract = tempfile.mkdtemp()
-        try:
-            # Initialize APK database in the temporary root
-            (pathlib.Path(tmp_extract) / "etc" / "apk").mkdir(parents=True, exist_ok=True)
-            (pathlib.Path(tmp_extract) / "usr" / "lib" / "apk" / "db").mkdir(parents=True, exist_ok=True)
-            (pathlib.Path(tmp_extract) / "usr" / "lib" / "apk" / "db" / "installed").touch()
-            
-            # Use apk to extract the package
-            apk_cmd = paths.apk()
-            ret = subprocess.run(
-                [
-                    apk_cmd,
-                    "add",
-                    "--root",
-                    tmp_extract,
-                    "--repositories-file",
-                    "/dev/null",
-                    "--no-scripts",
-                    "--allow-untrusted",
-                    "--no-interactive",
-                    apk_file,
-                ],
-                capture_output=True,
-            )
-            
-            if ret.returncode != 0:
-                err_msg = ret.stderr.decode() if ret.stderr else "unknown error"
-                raise RuntimeError(
-                    f"failed to extract apk-tools-static-bin: {err_msg}"
-                )
-            
-            # Find and copy the apk.static binary
-            # Check standard locations: usr/bin/apk.static, bin/apk.static, or root
-            apk_static_src = None
-            possible_paths = [
-                os.path.join(tmp_extract, "usr", "bin", "apk.static"),
-                os.path.join(tmp_extract, "bin", "apk.static"),
-                os.path.join(tmp_extract, "apk.static"),
-            ]
-            
-            for path in possible_paths:
-                if os.path.isfile(path):
-                    apk_static_src = path
-                    break
-            
-            # If not found in standard locations, search recursively
-            if not apk_static_src:
-                for root, dirs, files in os.walk(tmp_extract):
-                    if "apk.static" in files:
-                        apk_static_src = os.path.join(root, "apk.static")
-                        break
-            
-            if not apk_static_src or not os.path.isfile(apk_static_src):
-                raise RuntimeError("apk.static binary not found in extracted package")
-            
-            # Copy to destination
-            shutil.copy2(apk_static_src, dest)
-            os.chmod(dest, 0o755)
-            
-            # Update paths to use the static apk
-            paths.set_apk(dest)
-        finally:
-            shutil.rmtree(tmp_extract, ignore_errors=True)
-    except Exception as e:
-        raise RuntimeError(
-            f"failed to download/extract apk-tools-static-bin from {url}: {e}"
-        ) from e
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def _srcpkg_ver(pkgn, pkgb):
@@ -151,7 +41,7 @@ def _srcpkg_ver(pkgn, pkgb):
 
     tmplv = template.Template(
         pkgp,
-        pkgb.profile().arch,
+        pkgb.profile.arch,
         True,
         False,
         (1, 1),
@@ -165,8 +55,8 @@ def _srcpkg_ver(pkgn, pkgb):
     if not hasattr(modv, "pkgver") or not hasattr(modv, "pkgrel"):
         return None, tmplv.full_pkgname
 
-    pver = getattr(modv, "pkgver")
-    prel = getattr(modv, "pkgrel")
+    pver = modv.pkgver
+    prel = modv.pkgrel
     if pver is None or prel is None:
         return None, tmplv.full_pkgname
 
@@ -241,7 +131,7 @@ def setup_depends(pkg, only_names=False):
             rdeps.append((orig, dep))
 
     cdeps = []
-    if not pkg.profile().cross and (pkg.options["check"] or pkg._force_check):
+    if not pkg.profile.cross and (pkg.options["check"] or pkg._force_check):
         cdeps = pkg.checkdepends
 
     if pkg.stage > 0 and not only_names:
@@ -268,31 +158,26 @@ def setup_depends(pkg, only_names=False):
 
 
 def _install_from_repo(pkg, pkglist, cross=False):
-    from cbuild.apk import sign
-
-    signkey = sign.get_keypath()
-
     if pkg.stage == 0:
         ret = apki.call(
             "add",
             ["--usermode", "--no-scripts", *pkglist],
             pkg,
             capture_output=True,
-            allow_untrusted=not signkey,
         )
-    elif cross and pkg.profile().cross:
-        ret = apki.call_chroot(
+    elif cross and pkg.profile.cross:
+        ret = apki.call(
             "add",
             [
                 "--root",
-                str(pkg.profile().sysroot),
+                str(pkg.profile.sysroot),
                 "--no-scripts",
                 *pkglist,
             ],
             pkg,
             capture_output=True,
-            arch=pkg.profile().arch,
-            allow_untrusted=not signkey,
+            arch=pkg.profile.arch,
+            chroot=True,
         )
     else:
         # write world file and fix instead of adding to account for previous
@@ -303,12 +188,12 @@ def _install_from_repo(pkg, pkglist, cross=False):
             for pkgn in pkglist:
                 wf.write(f"{pkgn}\n")
         # and then perform the transaction
-        ret = apki.call_chroot(
+        ret = apki.call(
             "fix",
             [],
             pkg,
             capture_output=True,
-            allow_untrusted=not signkey,
+            chroot=True,
         )
     if ret.returncode != 0:
         outl = ret.stderr.strip().decode()
@@ -329,22 +214,24 @@ def _get_vers(pkgs, pkg, sysp, arch):
 
     ret = {}
     with flock.lock(flock.apklock(arch if arch else chroot.host_cpu())):
-        out, crepos = apki.call(
-            "search",
-            ["--from", "none", "-e", "-a", *plist],
+        vers, crepos = apki.query(
+            ["name", "version"],
+            [
+                "--from",
+                "none",
+                "--all-matches",
+                *plist,
+            ],
             pkg,
             root=sysp,
-            capture_output=True,
             arch=arch,
-            allow_untrusted=True,
             return_repos=True,
         )
-    if out.returncode >= len(plist):
+    if not vers:
         return {}, None
 
-    # map the output to a dict
-    for f in out.stdout.strip().decode().split("\n"):
-        nn, nv = autil.get_namever(f)
+    for ver in vers:
+        nn, nv = ver["name"], ver["version"]
         if nn not in ret:
             ret[nn] = [nv]
         else:
@@ -354,62 +241,62 @@ def _get_vers(pkgs, pkg, sysp, arch):
 
 
 def _is_available(pkgn, pkgop, pkgv, pkg, vers, crepos, sysp, arch):
-    if vers is None:
-        return None
     if pkgn not in vers:
-        return None
+        return None, None, None
 
     pvers = vers[pkgn]
 
     # we don't care about ver so take latest (it's what apk would install)
     if not pkgv:
-        return pvers[-1]
+        return pvers[-1], None, None
 
     ppat = pkgn + pkgop + pkgv
 
     # first match against every version available
     for apn in reversed(pvers):
         # matched at least one version
-        if autil.pkg_match(f"{pkgn}-{apn}", ppat):
+        if autil.pkg_match(pkgn, apn, ppat):
             break
     else:
         # matched no version, so build
-        return None
+        return None, False, None
 
     # only one version, so it's unambiguous
     if len(pvers) == 1:
-        return pvers[0]
+        return pvers[0], None, None
 
     # now check repos individually in priority order
+    # TODO: this could be refactored into a single query call by checking
+    # the repositories field, which would be a little faster, but not much
     with flock.lock(flock.apklock(arch)):
         for cr in crepos:
             if cr == "--repository":
                 continue
-            st = (
-                apki.call(
-                    "search",
-                    ["--from", "none", "--repository", cr, "-e", "-a", pkgn],
-                    None,
-                    root=sysp,
-                    capture_output=True,
-                    arch=arch,
-                    allow_untrusted=True,
-                )
-                .stdout.strip()
-                .decode()
+            jsn = apki.query(
+                ["name", "version"],
+                [
+                    "--from",
+                    "none",
+                    "--repository",
+                    cr,
+                    "--all-matches",
+                    pkgn,
+                ],
+                None,
+                root=sysp,
+                arch=arch,
             )
-            if len(st) == 0:
+            if not jsn:
                 continue
-            pn = st.split("\n")
             # highest priority repo takes all
-            if len(pn) > 0:
-                if autil.pkg_match(pn[0], ppat):
-                    nn, nv = autil.get_namever(pn[0])
-                    return nv
-                return None
+            if len(jsn) > 0:
+                nn, nv = jsn[0]["name"], jsn[0]["version"]
+                if autil.pkg_match(nn, nv, ppat):
+                    return nv, None, None
+                return None, nv, cr
 
     # no match in individual repos? this should be unreachable
-    return None
+    return None, None, None
 
 
 def install(pkg, origpkg, step, depmap, hostdep, update_check):
@@ -417,21 +304,14 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
     if pkg.build_style:
         style = f" [{pkg.build_style}]"
 
-    pprof = pkg.profile()
+    pprof = pkg.profile
     tarch = pprof.arch
-    cross = not not pprof.cross
+    cross = pprof.cross
 
     if pkg.pkgname != origpkg:
         pkg.log(f"building{style} (dependency of {origpkg}) for {tarch}...")
     else:
         pkg.log(f"building{style} for {tarch}...")
-
-    # ensure apk-tools-static is available for stage > 0
-    if pkg.stage > 0:
-        try:
-            _ensure_apk_tools_static(pkg)
-        except Exception as e:
-            pkg.error(f"failed to ensure apk-tools-static: {e}")
 
     host_binpkg_deps = []
     binpkg_deps = []
@@ -482,7 +362,9 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
             host_binpkg_deps.append(pkgn)
             continue
         # check if available in repository
-        aver = _is_available(pkgn, "=", sver, pkg, hvers, hrepos, hsys, None)
+        aver, avail, arepo = _is_available(
+            pkgn, "=", sver, pkg, hvers, hrepos, hsys, None
+        )
         if aver:
             log.out_plain(f"  [host] {pkgn}: found ({aver})")
             host_binpkg_deps.append(f"{pkgn}={aver}")
@@ -492,7 +374,16 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
             log.out_plain(f"  [host] {pkgn}: unresolved build dependency")
             pkg.error(f"host dependency '{pkgn}' does not exist")
         # not found
-        log.out_plain(f"  [host] {pkgn}: not found")
+        if avail is False:
+            log.out_plain(
+                f"  \f[bold,orange][host] {pkgn}: available version(s) not matching template\f[]"
+            )
+        elif avail:
+            log.out_plain(
+                f"  \f[bold,red][host] {pkgn}: mismatched version ({avail}) in repo '{arepo}'\f[]"
+            )
+        else:
+            log.out_plain(f"  \f[bold][host] {pkgn}: not found\f[]")
         # check for loops
         if not cross and (pkgn == origpkg or pkgn == pkg.pkgname):
             pkg.error(f"[host] build loop detected: {pkgn} <-> {origpkg}")
@@ -505,7 +396,9 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
             binpkg_deps.append(pkgn)
             continue
         # check if available in repository
-        aver = _is_available(pkgn, "=", sver, pkg, tvers, trepos, tsys, tarch)
+        aver, avail, arepo = _is_available(
+            pkgn, "=", sver, pkg, tvers, trepos, tsys, tarch
+        )
         if aver:
             log.out_plain(f"  [target] {pkgn}: found ({aver})")
             binpkg_deps.append(f"{pkgn}={aver}")
@@ -515,7 +408,16 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
             log.out_plain(f"  [target] {pkgn}: unresolved build dependency")
             pkg.error(f"target dependency '{pkgn}' does not exist")
         # not found
-        log.out_plain(f"  [target] {pkgn}: not found")
+        if avail is False:
+            log.out_plain(
+                f"  \f[bold,orange][target] {pkgn}: available version(s) not matching template\f[]"
+            )
+        elif avail:
+            log.out_plain(
+                f"  \f[bold,red][target] {pkgn}: mismatched version ({avail}) in repo '{arepo}'\f[]"
+            )
+        else:
+            log.out_plain(f"  \f[bold][target] {pkgn}: not found\f[]")
         # check for loops
         if pkgn == origpkg or pkgn == pkg.pkgname:
             pkg.error(f"[target] build loop detected: {pkgn} <-> {origpkg}")
@@ -552,22 +454,34 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
         if pkgn == origpkg and pkg.pkgname != origpkg:
             pkg.error(f"[runtime] build loop detected: {pkgn} <-> {pkgn}")
         # check the repository
-        aver = _is_available(pkgn, pkgop, pkgv, pkg, rvers, rrepos, tsys, tarch)
+        aver, avail, arepo = _is_available(
+            pkgn, pkgop, pkgv, pkg, rvers, rrepos, tsys, tarch
+        )
         if aver:
             log.out_plain(f"  [runtime] {dep}: found ({aver})")
             continue
         # not found
-        log.out_plain(f"  [runtime] {dep}: not found")
+        if avail is False:
+            log.out_plain(
+                f"  \f[bold,orange][runtime] {dep}: available version(s) not matching template\f[]"
+            )
+        elif avail:
+            log.out_plain(
+                f"  \f[bold,red][runtime] {dep}: mismatched version ({avail}) in repo '{arepo}'\f[]"
+            )
+        else:
+            log.out_plain(f"  \f[bold][runtime] {dep}: not found\f[]")
         # consider missing
         rdv, fulln = _srcpkg_ver(pkgn, pkg)
         if not fulln or (pkgop and pkgv and not rdv):
             pkg.error(f"template '{pkgn}' cannot be resolved")
         if pkgop and pkgv:
-            rfv = f"{pkgn}-{rdv}"
             rpt = pkgn + pkgop + pkgv
             # ensure the build is not futile
-            if not autil.pkg_match(rfv, rpt):
-                pkg.error(f"version {rfv} does not match dependency {rpt}")
+            if not autil.pkg_match(pkgn, rdv, rpt):
+                pkg.error(
+                    f"version {pkgn}={rdv} does not match dependency {rpt}"
+                )
         # treat the same as any missing target dependency, but without install
         missing_deps.append(fulln)
 
@@ -592,6 +506,7 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
                     force_check=pkg._force_check,
                     stage=pkg.stage,
                     allow_restricted=pkg._allow_restricted,
+                    allow_ci=pkg._allow_ci,
                     data=pkg._data,
                     linter=pkg._linter,
                     formatter=pkg._formatter,
@@ -622,6 +537,7 @@ def install(pkg, origpkg, step, depmap, hostdep, update_check):
                     force_check=pkg._force_check,
                     stage=pkg.stage,
                     allow_restricted=pkg._allow_restricted,
+                    allow_ci=pkg._allow_ci,
                     data=pkg._data,
                 ),
                 depmap,

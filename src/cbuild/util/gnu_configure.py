@@ -26,7 +26,7 @@ def _cache_expand(s, eenv):
         return eenv[v[0]]
 
     v = v[1]
-    if v.startswith("'") or v.startswith('"'):
+    if v.startswith(("'", '"')):
         vs = shlex.split(v)
         if len(vs) != 1:
             logger.get().log(f"Invalid cache entry value: {v}")
@@ -38,7 +38,7 @@ def _cache_expand(s, eenv):
 
 def _read_cache(cpath, cname, eenv):
     with open(cpath / cname) as f:
-        for ln in f.readlines():
+        for ln in f:
             ln = ln.strip()
             if len(ln) == 0 or ln[0] == "#":
                 continue
@@ -57,9 +57,9 @@ def configure(
     configure_args=None,
     configure_script=None,
     build_dir=None,
-    extra_args=[],
+    extra_args=None,
     generator=None,
-    env={},
+    env=None,
     sysroot=True,
 ):
     if not configure_script:
@@ -86,6 +86,7 @@ def configure(
         "--sbindir=/usr/bin",
         "--bindir=/usr/bin",
         "--libdir=/usr/lib",
+        "--libexecdir=/usr/lib",
         "--mandir=/usr/share/man",
         "--infodir=/usr/share/info",
         "--localstatedir=/var",
@@ -104,20 +105,20 @@ def configure(
     # caches taken from openembedded
     cachedir = paths.cbuild() / "misc/autoconf_cache"
 
-    if pkg.profile().triplet:
-        with pkg.profile("host") as pf:
+    if pkg.profile.triplet:
+        with pkg.use_profile("host") as pf:
             cargs.append("--build=" + pf.triplet)
-        cargs.append("--host=" + pkg.profile().triplet)
+        cargs.append("--host=" + pkg.profile.triplet)
 
-    if pkg.profile().cross:
+    if pkg.profile.cross:
         if sysroot:
-            cargs.append("--with-sysroot=" + str(pkg.profile().sysroot))
-            cargs.append("--with-libtool-sysroot=" + str(pkg.profile().sysroot))
+            cargs.append("--with-sysroot=" + str(pkg.profile.sysroot))
+            cargs.append("--with-libtool-sysroot=" + str(pkg.profile.sysroot))
         # base cache
         _read_cache(cachedir, "common-linux", eenv)
         _read_cache(cachedir, "musl-linux", eenv)
         # endian cache
-        _read_cache(cachedir, "endian-" + pkg.profile().endian, eenv)
+        _read_cache(cachedir, "endian-" + pkg.profile.endian, eenv)
         # machine cache
         cl = {
             "armv7l": ["arm-common", "arm-linux"],
@@ -125,14 +126,15 @@ def configure(
             "ppc64le": ["powerpc-common", "powerpc-linux", "powerpc64-linux"],
             "ppc64": ["powerpc-common", "powerpc-linux", "powerpc64-linux"],
             "x86_64": ["x86_64-linux"],
-        }.get(pkg.profile().arch, [])
+        }.get(pkg.profile.arch, [])
         for ln in cl:
             _read_cache(cachedir, ln, eenv)
     else:
         _read_cache(cachedir, "musl-linux", eenv)
 
     eenv.update(pkg.configure_env)
-    eenv.update(env)
+    if env:
+        eenv.update(env)
 
     # generate configure
     if generator:
@@ -147,7 +149,7 @@ def configure(
         cscript,
         *cargs,
         *configure_args,
-        *extra_args,
+        *(extra_args or []),
         wrksrc=build_dir,
         env=eenv,
     )

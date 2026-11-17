@@ -1,5 +1,5 @@
 pkgname = "xserver-xlibre"
-pkgver = "25.2.2"
+pkgver = "25.2.3"
 pkgrel = 0
 build_style = "meson"
 _fontroot = "/usr/share/fonts"
@@ -96,7 +96,7 @@ pkgdesc = "Xlibre X server"
 license = "MIT AND BSD-3-Clause"
 url = "https://github.com/X11Libre/xserver"
 source = f"https://github.com/X11Libre/xserver/archive/refs/tags/xlibre-xserver-{pkgver}.tar.gz"
-sha256 = "3c1f07f4b5f8a483473097be4b964ee97a2b92adde9de6c0d8d9d7217a382810"
+sha256 = "36f513390b777d6805d9bd7b4c72d376b1aaa01049dc7d8a37cbbd89eb862ec3"
 tool_flags = {
     "CFLAGS": ["-D_GNU_SOURCE", "-D__uid_t=uid_t", "-D__gid_t=gid_t"],
     "LDFLAGS": ["-Wl,-z,lazy"],  # must be set for modules to work
@@ -106,7 +106,7 @@ hardening = ["!int"]
 # test times out
 options = ["!check", "empty"]
 
-match self.profile().arch:
+match self.profile.arch:
     case "x86_64":
         configure_args += ["-Dint10=x86emu"]
     case _:
@@ -177,7 +177,7 @@ def _(self):
     self.subdesc = "default server"
     # check if this needs to be updated when updating
     self.depends += [
-        "so:libEGL.so.1!mesa-egl-libs",
+        "so:libEGL.so.1!libglvnd",
         "xserver-xorg-protocol>=20180227",  # https://github.com/xlibre-alpine/xlibre-ports/issues/4
         "xkeyboard-config",
     ]

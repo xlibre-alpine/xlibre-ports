@@ -3,12 +3,16 @@
 Cports is a collection of source X11Libre ports for Chimera. The system has been
 written specifically for the distribution using the Python scripting language.
 
+<details>
+  <summary>Content warning: upstream Chimera Linux calling out on our project</summary>
+
 If you are familiar with cports, this is the same system based off [cports](https://github.com/chimera-linux/cports), but designed for just X11Libre as this isn't getting upstreamed into cports for [a](https://gts.chimera-linux.org/@chimera/statuses/01JYYNAB4GFQ8Q5JZZ92TRM4WF) [few](https://github.com/chimera-linux/cports/blob/master/CONTRIBUTING.md?plain=1#L15-L17) [concerning](https://tech.lgbt/@q66@gts.q66.moe/115604325497563778) [reasons](https://gts.q66.moe/@q66/statuses/01KCGZ33XYS5XBN1N95JGP6197).
 
 This project is already getting being called out from the main Chimera developers [as "anyone who breaks their system with that fully deserves so and will be laughed at"](https://gts.q66.moe/@q66/statuses/01KCGZ33XYS5XBN1N95JGP6197) but this won't stop us from maintaining it. 
 
 **Issues will be sorted if you install a Xlibre package and then install any packages after that rely on X11 on your system, just hit us with an [issue report](https://github.com/xlibre-alpine/xlibre-ports/issues).**
 
+</details>
 From user standpoint, it works similarly to many distro packaging systems (users
 of Void Linux `xbps-src` will most likely find it a little familiar) however it
 is not based on any existing system and should not be considered a variant of any.
@@ -58,7 +62,7 @@ can be located in `etc/keys` in the `cports` directory, with the `.pub` extensio
 ### Pinning the repositories
 
 You might also want to pin the local repository. This will effectively make `apk`
-prefer your pinned repository even if a newer version if available in remote
+prefer your pinned repository even if a newer version is available in remote
 repos. This is done by adding a prefix such as `@cports` before the repository
 line, e.g. `@cports /home/user/cports/packages/main`. Then you can install things
 from the repository like `apk add foo@cports`. If you just `apk add foo`, the

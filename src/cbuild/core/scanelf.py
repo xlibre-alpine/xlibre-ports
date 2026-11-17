@@ -173,8 +173,8 @@ def scan_one(fpath):
         shdr = _unpack(hdrdef_sect, hdr_sect[wsi], shoff, endian, mm)
         # SHT_DYNAMIC
         if shdr["type"] == 0x6:
-            dynsect = shdr
-            break
+            if not dynsect:
+                dynsect = shdr
         elif shdr["type"] == 0x3:
             strtabs.append(shdr)
         # march on
@@ -274,7 +274,7 @@ def scan(pkg, somap):
     # only test machine type against libc when not bootstrapping
     # as otherise we cannot provide guarantees about the host system
     if pkg.stage > 0:
-        rsroot = pkg.rparent.profile().sysroot.relative_to("/")
+        rsroot = pkg.rparent.profile.sysroot.relative_to("/")
         libcp = paths.bldroot() / rsroot / "usr/lib/libc.so"
         libc = scan_one(libcp)
 
@@ -306,7 +306,9 @@ def scan(pkg, somap):
         # deny files in bad paths
         fparts = fpath.parts
         if fparts[0] != "usr" or fparts[1] == "include" or fparts[1] == "share":
-            elf_badpath.append(fpath)
+            # we permit this for e.g. rpi firmware for now
+            if fparts[0] != "boot":
+                elf_badpath.append(fpath)
         # expand
         mtype, etype, is_static, interp, textrel, xstk, needed, soname = scanned
         # has textrels

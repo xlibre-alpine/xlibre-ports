@@ -1,5 +1,5 @@
 def _make_crossfile(pkg, build_dir):
-    if not pkg.profile().cross:
+    if not pkg.profile.cross:
         return
 
     cfpath = pkg.cwd / build_dir / "cbuild.cross"
@@ -7,9 +7,9 @@ def _make_crossfile(pkg, build_dir):
     (pkg.cwd / build_dir).mkdir(parents=True, exist_ok=True)
 
     # map known profiles to meson arch
-    match pkg.profile().arch:
+    match pkg.profile.arch:
         case "aarch64" | "x86_64" | "riscv64":
-            meson_cpu = pkg.profile().arch
+            meson_cpu = pkg.profile.arch
         case "ppc64le" | "ppc64":
             meson_cpu = "ppc64"
         case "ppc":
@@ -19,11 +19,10 @@ def _make_crossfile(pkg, build_dir):
         case "loongarch64":
             meson_cpu = "loongarch64"
         case _:
-            pkg.error(f"unknown meson architecture: {pkg.profile().arch}")
+            pkg.error(f"unknown meson architecture: {pkg.profile.arch}")
 
     with open(cfpath, "w") as outf:
-        outf.write(
-            f"""
+        outf.write(f"""
 [binaries]
 c = '{pkg.get_tool("CC")}'
 cpp = '{pkg.get_tool("CXX")}'
@@ -35,7 +34,7 @@ readelf = '{pkg.get_tool("READELF")}'
 objcopy = '{pkg.get_tool("OBJCOPY")}'
 pkgconfig = '{pkg.get_tool("PKG_CONFIG")}'
 llvm-config = '/usr/bin/llvm-config'
-rust = ['rustc', '--target', '{pkg.profile().triplet}', '--sysroot', '{pkg.profile().sysroot / "usr"}']
+rust = ['rustc', '--target', '{pkg.profile.triplet}', '--sysroot', '{pkg.profile.sysroot / "usr"}']
 
 [properties]
 needs_exe_wrapper = true
@@ -50,15 +49,14 @@ cpp_link_args = {pkg.get_ldflags()}
 [host_machine]
 system = 'linux'
 cpu_family = '{meson_cpu}'
-cpu = '{pkg.profile().arch}'
-endian = '{pkg.profile().endian}'
-"""
-        )
+cpu = '{pkg.profile.arch}'
+endian = '{pkg.profile.endian}'
+""")
 
     return cfpath
 
 
-def configure(pkg, build_dir, meson_dir=None, extra_args=[], env={}):
+def configure(pkg, build_dir, meson_dir=None, extra_args=None, env=None):
     if not meson_dir:
         meson_dir = "."
 
@@ -85,7 +83,7 @@ def configure(pkg, build_dir, meson_dir=None, extra_args=[], env={}):
         "setup",
         "--prefix=/usr",
         "--libdir=/usr/lib",
-        "--libexecdir=/usr/libexec",
+        "--libexecdir=/usr/lib",
         "--bindir=/usr/bin",
         "--sbindir=/usr/bin",
         "--includedir=/usr/include",
@@ -104,33 +102,39 @@ def configure(pkg, build_dir, meson_dir=None, extra_args=[], env={}):
         "-Dpkgconfig.relocatable=false",
         "-Dpython.bytecompile=0",
         *cargs,
-        *extra_args,
+        *(extra_args or []),
         meson_dir,
         build_dir,
         env=env,
     )
 
 
-def invoke(pkg, command, build_dir, extra_args=[], env={}, wrapper=[]):
+def invoke(pkg, command, build_dir, extra_args=None, env=None, wrapper=None):
     pkg.do(
-        *wrapper,
+        *(wrapper or []),
         "meson",
         command,
-        *extra_args,
+        *(extra_args or []),
         wrksrc=build_dir,
         env=env,
     )
 
 
-def install(pkg, build_dir, extra_args=[], env={}, wrapper=[]):
+def install(pkg, build_dir, extra_args=None, env=None, wrapper=None):
     renv = {"DESTDIR": str(pkg.chroot_destdir)}
-    renv.update(env)
+    if env:
+        renv.update(env)
     invoke(
-        pkg, "install", build_dir, ["--no-rebuild", *extra_args], renv, wrapper
+        pkg,
+        "install",
+        build_dir,
+        ["--no-rebuild", *(extra_args or [])],
+        renv,
+        wrapper,
     )
 
 
-def test(pkg, build_dir, extra_args=[], env={}, wrapper=[]):
+def test(pkg, build_dir, extra_args=None, env=None, wrapper=None):
     invoke(
         pkg,
         "test",
@@ -140,7 +144,7 @@ def test(pkg, build_dir, extra_args=[], env={}, wrapper=[]):
             "--print-errorlogs",
             "--num-processes",
             str(pkg.make_jobs),
-            *extra_args,
+            *(extra_args or []),
         ],
         env,
         wrapper,

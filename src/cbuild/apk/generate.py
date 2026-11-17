@@ -19,7 +19,7 @@ def _get_old_deps(pkg, arch):
     if pkg.stage < 3:
         return None, None, None, None
 
-    cpf = pkg.rparent.profile()
+    cpf = pkg.rparent.profile
 
     if cpf.cross:
         sysp = paths.bldroot() / cpf.sysroot.relative_to("/")
@@ -27,77 +27,36 @@ def _get_old_deps(pkg, arch):
         sysp = paths.bldroot()
 
     def _get_sum(allow_net):
-        return (
-            acli.call(
-                "info",
-                [
-                    "--from=none",
-                    "--depends",
-                    "--provides",
-                    "--install-if",
-                    pkg.pkgname,
-                ],
-                pkg,
-                root=sysp,
-                capture_output=True,
-                arch=arch,
-                allow_untrusted=True,
-                allow_network=allow_net,
-            )
-            .stdout.strip()
-            .decode()
+        return acli.query(
+            ["version", "depends", "provides", "install-if"],
+            [
+                "--from=none",
+                pkg.pkgname,
+            ],
+            pkg,
+            root=sysp,
+            arch=arch,
+            allow_network=allow_net,
         )
 
     # first fetch from local repo, fall back to network
     # this is to prevent having to disambiguate between different
     # package providers and so on, always get only one...
     depsum = _get_sum(False)
-    if len(depsum) == 0:
+    if not depsum:
         depsum = _get_sum(True)
 
-    depsum = depsum.splitlines()
+    if not depsum:
+        return None, [], [], []
 
-    deps = []
-    provides = []
-    instif = []
-    curpver = None
+    fver = depsum[0]
 
-    parts = 0
-    curcont = deps
-
-    for ln in depsum:
-        ln = ln.strip()
-        # skip empty lines
-        if ln == "":
-            continue
-        # extract info and determine lists
-        if ln.endswith(":"):
-            # only consider one package
-            if parts == 3:
-                break
-            # use verbose mode, it sucks but no other way to get pkgver
-            if ln.endswith(" depends on:"):
-                curcont = deps
-                ln = ln.removesuffix(" depends on:")
-            elif ln.endswith(" provides:"):
-                curcont = provides
-                ln = ln.removesuffix(" provides:")
-            elif ln.endswith(" has auto-install rule:"):
-                curcont = instif
-                ln = ln.removesuffix(" has auto-install rule:")
-            parts += 1
-            # extract pkgver
-            if not curpver:
-                pn, curpver = autil.get_namever(ln)
-            continue
-        # now add to current list
-        curcont.append(ln)
-
-    deps.sort()
-    provides.sort()
-    instif.sort()
-
-    return curpver, deps, provides, instif
+    return (
+        fver["version"],
+        sorted(fver.get("depends", [])),
+        sorted(fver.get("provides", [])),
+        sorted(fver.get("install-if", [])),
+    )
 
 
 def _get_new_deps(pkg, origin):
@@ -276,11 +235,10 @@ def _get_cmdline(
         pargs += ["--trigger", t]
 
     # signing key
-    if signkey:
-        if pkg.rparent.stage > 0:
-            pargs += ["--sign-key", f"/tmp/{signkey.name}"]
-        else:
-            pargs += ["--sign-key", str(signkey)]
+    if pkg.rparent.stage > 0:
+        pargs += ["--sign-key", f"/tmp/{signkey.name}"]
+    else:
+        pargs += ["--sign-key", str(signkey)]
 
     # for stage 1, we have stage0 apk built without zstd
     if (pkg.stage > 1 and pkg.compression) or pkg.compression == "none":
@@ -435,7 +393,7 @@ def gen_mkpkg(pkg, repo, arch, binpkg, mkf, adesc=None):
 
 
 def write_make(pkg, mkf):
-    arch = pkg.rparent.profile().arch
+    arch = pkg.rparent.profile.arch
     binpkg = f"{pkg.pkgname}-{pkg.pkgver}-r{pkg.pkgrel}.apk"
 
     stagebase = paths.stage_repository()

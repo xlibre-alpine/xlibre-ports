@@ -3,16 +3,20 @@ from cbuild.core import git
 import shutil
 
 
-def patch(pkg, patch_list, wrksrc=None, apply_args=[], stamp=False):
+def patch(pkg, patch_list, wrksrc=None, apply_args=None, stamp=False):
     if len(patch_list) == 0:
         return
 
+    srcd = pkg.srcdir
+    if wrksrc:
+        srcd = srcd / wrksrc
+
     # first init a git repository, apply won't work without it
-    if not git.call(["init", "-q"], cwd=pkg.srcdir, foreground=True):
+    if not git.call(["init", "-q"], cwd=srcd, foreground=True):
         pkg.error("failed to initialize repository in source location")
 
     if not git.call(
-        ["config", "--local", "gc.auto", "0"], cwd=pkg.srcdir, foreground=True
+        ["config", "--local", "gc.auto", "0"], cwd=srcd, foreground=True
     ):
         pkg.error("failed setting initial git repository config")
 
@@ -20,11 +24,11 @@ def patch(pkg, patch_list, wrksrc=None, apply_args=[], stamp=False):
     srcmd = [
         "apply",
         "--whitespace=nowarn",
-        *apply_args,
+        *(apply_args or []),
     ]
 
     def _apply(p):
-        if not git.call([*srcmd, p], cwd=pkg.srcdir, foreground=True):
+        if not git.call([*srcmd, p], cwd=srcd, foreground=True):
             pkg.error(f"failed to apply '{p.name}'")
 
     for p in patch_list:
@@ -37,4 +41,4 @@ def patch(pkg, patch_list, wrksrc=None, apply_args=[], stamp=False):
             _apply(p)
 
     # now remove the repo so we don't give build systems ideas
-    shutil.rmtree(pkg.srcdir / ".git")
+    shutil.rmtree(srcd / ".git")

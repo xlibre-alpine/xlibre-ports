@@ -6,6 +6,7 @@ import errno
 import shutil
 import pathlib
 import binascii
+import urllib.error
 import urllib.request
 from tempfile import mkstemp, mkdtemp
 
@@ -16,7 +17,7 @@ from cbuild.util import flock
 _chroot_checked = False
 _chroot_ready = False
 _extra_pkgs = []
-_apk_static_base = "https://repo.chimera-linux.org/apk/3.0.5-r0"
+_apk_static_base = "https://repo.chimera-linux.org/apk/3.0.8-r0"
 
 
 def host_cpu():
@@ -65,7 +66,7 @@ def get_world_base():
 
 
 def _subst_in(pat, rep, src, dest=None):
-    inf = open(src, "r")
+    inf = open(src)
     if dest:
         outf = open(dest, "w")
     else:
@@ -113,6 +114,11 @@ def _prepare_etc():
             if not dpath.exists() and spath.exists():
                 dpath.parent.mkdir(0o755, parents=True, exist_ok=True)
                 shutil.copy(spath, dpath.parent)
+
+    # ccache static values
+    with open(tfp / "ccache.conf", "w") as mf:
+        mf.write("cache_dir = /cbuild_cache/ccache\n")
+        mf.write("temporary_dir = /tmp/ccache\n")
 
     # delete potential shadow so sysusers does not fail
     (tfp / "shadow").unlink(missing_ok=True)
@@ -180,7 +186,7 @@ def _ensure_apk_static():
     try:
         with urllib.request.urlopen(url) as resp, open(dest, "wb") as outf:
             shutil.copyfileobj(resp, outf)
-    except Exception as e:
+    except (OSError, urllib.error.URLError) as e:
         raise errors.CbuildException(
             f"failed to download static apk from {url}"
         ) from e
@@ -203,10 +209,9 @@ def setup_keys(rootp):
         shutil.copy2(f, keydir)
 
     pkey = signi.get_keypath()
-    if pkey:
-        pubkey = pkey.with_suffix(pkey.suffix + ".pub")
-        if pubkey.is_file():
-            shutil.copy2(pubkey, keydir)
+    pubkey = pkey.with_suffix(pkey.suffix + ".pub")
+    if pubkey.is_file():
+        shutil.copy2(pubkey, keydir)
 
 
 _crepos = None
@@ -235,7 +240,9 @@ def get_confrepos():
         return _crepos
 
     _crepos = []
-    for f in (paths.distdir() / "etc/apk/repositories.d").glob("*.conf"):
+    for f in sorted(
+        (paths.distdir() / "etc/apk/repositories.d").glob("*.conf")
+    ):
         with open(f) as repof:
             for repo in repof:
                 _crepos.append(repo.strip().replace("@mirror@", _mirror))
@@ -271,8 +278,6 @@ def shell_update(rnet, dirty):
                 idxp = rd.parent / cr / hcpu
                 if (idxp / "Packages.adb").is_file():
                     rfh.write(f"v3 /binpkgs/{cr}\n")
-                elif (idxp / "APKINDEX.tar.gz").is_file():
-                    rfh.write(f"v2 /binpkgs/{cr}\n")
         if paths.alt_repository():
             for rd in paths.alt_repository().iterdir():
                 for cr in get_confrepos():
@@ -282,8 +287,6 @@ def shell_update(rnet, dirty):
                     idxp = rd.parent / cr / hcpu
                     if (idxp / "Packages.adb").is_file():
                         rfh.write(f"v3 /altbinpkgs/{cr}\n")
-                    elif (idxp / "APKINDEX.tar.gz").is_file():
-                        rfh.write(f"v2 /altbinpkgs/{cr}\n")
         # remote repos come last
         if rnet:
             from cbuild.core import profile
@@ -292,8 +295,8 @@ def shell_update(rnet, dirty):
                 for cr in get_confrepos():
                     if cr.startswith("/"):
                         continue
-                    rfh.write(cr.replace("@section@", rd))
-                    rfh.write("\n")
+                    cr = cr.replace("@section@", rd)
+                    rfh.write(f"v3 {cr}\n")
 
     # ensure any local apk commands can write into cache
     (paths.cbuild_cache() / "apk" / hcpu).mkdir(parents=True, exist_ok=True)
@@ -304,8 +307,12 @@ def shell_update(rnet, dirty):
 
     with flock.lock(flock.apklock(hcpu)):
         if (
-            apki.call_chroot(
-                "update", [], None, full_chroot=True, allow_network=rnet
+            enter(
+                "apk",
+                "update",
+                fakeroot=True,
+                mount_binpkgs=True,
+                mount_cbuild_cache=True,
             ).returncode
             != 0
         ):
@@ -342,8 +349,7 @@ def install():
     logger.get().out(f"cbuild: installing {' '.join(_extra_pkgs)}...")
 
     initdb()
-    # --usermode cannot be used on Alpine Linux 3.23's apk-tools because it segfaults
-    # as a workaround, use Chimera Linux's static version of apk-tools if Alpine is detected
+    # Alpine 3.23's apk-tools segfaults with --usermode; use Chimera's static apk.
     _ensure_apk_static()
 
     setup_keys(paths.bldroot())
@@ -453,6 +459,8 @@ def _setup_dummy(rootp, archn):
             [
                 "--output",
                 repod / f"{pkgn}-{pkgv}.apk",
+                "--sign-key",
+                signi.get_keypath(),
                 "--info",
                 f"name:{pkgn}",
                 "--info",
@@ -474,7 +482,6 @@ def _setup_dummy(rootp, archn):
             root=rootp,
             capture_output=True,
             arch=archn,
-            allow_untrusted=True,
         )
         if ret.returncode != 0:
             outl = ret.stderr.strip().decode()
@@ -485,10 +492,11 @@ def _setup_dummy(rootp, archn):
                 f"failed to create virtual provider for {archn}"
             )
 
-        if not apki.build_index(repod, epoch, True):
+        if not apki.build_index(repod, epoch):
             raise errors.CbuildException(
                 f"failed to index virtual provider for {archn}"
             )
+
         ret = apki.call(
             "add",
             ["--no-scripts", "--usermode", "--repository", tmpd, pkgn],
@@ -496,7 +504,6 @@ def _setup_dummy(rootp, archn):
             root=rootp,
             capture_output=True,
             arch=archn,
-            allow_untrusted=True,
         )
 
         if ret.returncode != 0:
@@ -582,7 +589,7 @@ def cleanup_world(bootstrapping, prof=None, perform=True):
     old_world = set()
     new_world = set()
 
-    with open(paths.bldroot() / "etc/apk/world", "r") as inf:
+    with open(paths.bldroot() / "etc/apk/world") as inf:
         for ln in inf:
             old_world.add(ln.strip())
 
@@ -611,12 +618,12 @@ def cleanup_world(bootstrapping, prof=None, perform=True):
             outf.write(f"{ep}\n")
 
     # perform transaction
-    f_ret = apki.call_chroot(
+    f_ret = apki.call(
         "fix",
         [],
         template.get_cats(),
         capture_output=True,
-        allow_untrusted=True,
+        chroot=True,
     )
 
     if f_ret.returncode != 0:
@@ -644,16 +651,19 @@ def update(pkg):
     _prepare_etc()
 
     with flock.lock(flock.apklock(host_cpu())):
-        apki.call_chroot("update", ["-q"], pkg, check=True, use_stage=True)
-        apki.call_chroot(
-            "upgrade", ["--available"], pkg, check=True, use_stage=True
-        )
+        fret = apki.call("update", ["-q"], pkg, use_stage=True, chroot=True)
+        if fret.returncode == 0:
+            fret = apki.call(
+                "upgrade", ["--available"], pkg, use_stage=True, chroot=True
+            )
+        if fret.returncode != 0:
+            raise errors.CbuildException("failed to update bldroot")
 
     # this is bootstrap-update
     if isinstance(pkg, str):
         return
 
-    prof = pkg.profile()
+    prof = pkg.profile
 
     # not cross, so we don't care
     if not prof.cross:
@@ -751,20 +761,8 @@ def enter(
         if "HTTP_PROXY_AUTH" in os.environ:
             envs["HTTP_PROXY_AUTH"] = os.environ["HTTP_PROXY_AUTH"]
 
-    # if running from template, ensure wrappers are early in executable path
-    if "CBUILD_STATEDIR" in envs:
-        envs["PATH"] = envs["CBUILD_STATEDIR"] + "/wrappers:" + envs["PATH"]
-
     if new_session:
         envs["PYTHONUNBUFFERED"] = "1"
-
-    # ccache path is searched first
-    #
-    # this has the implication of having ccache invoke whatever cc wrapper
-    # we have at the time, rather than the other way around, which means
-    # the wrappers don't have to account for ccache explicitly
-    if "CCACHEPATH" in envs:
-        envs["PATH"] = envs["CCACHEPATH"] + ":" + envs["PATH"]
 
     if ro_root:
         root_bind = "--ro-bind"
